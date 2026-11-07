@@ -1,13 +1,13 @@
-import * as sfx from './sfx.js?v=202611072047';
-import { START_SOUNDS } from './start-sounds.js?v=202611072047';
-import { END_SOUNDS } from './end-sounds.js?v=202611072047';
-import { Goo } from './goo.js?v=202611072047';
-import { bobble, makeVideo } from './export.js?v=202611072047';
-import * as talk from './mouth.js?v=202611072047';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072047';
-import { makeFrame, FW, FH } from './frame.js?v=202611072047';
-import * as words from './words.js?v=202611072047';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072047';
+import * as sfx from './sfx.js?v=202611072055';
+import { START_SOUNDS } from './start-sounds.js?v=202611072055';
+import { END_SOUNDS } from './end-sounds.js?v=202611072055';
+import { Goo } from './goo.js?v=202611072055';
+import { bobble, makeVideo } from './export.js?v=202611072055';
+import * as talk from './mouth.js?v=202611072055';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072055';
+import { makeFrame, FW, FH } from './frame.js?v=202611072055';
+import * as words from './words.js?v=202611072055';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072055';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -124,8 +124,22 @@ function updateCut() {
   btnCut.querySelector('small').textContent = cutBg ? 'NO BG' : 'BG ON';
 }
 
-/** the arcade backdrop shown behind a cut-out photo (and baked into the video) */
+/** the backdrop behind a cut-out photo (also in the videos and the JPG): assets/bobblebg.jpg */
 function paintBackdrop() {
+  paintSunburst(); // until the picture has loaded
+  const img = new Image();
+  img.onload = () => {
+    const g = bgCv.getContext('2d');
+    const s = Math.max(W / img.width, H / img.height); // cover
+    const w = img.width * s, h = img.height * s;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+  };
+  img.src = 'assets/bobblebg.jpg';
+}
+
+/** fallback backdrop: arcade sunburst */
+function paintSunburst() {
   const g = bgCv.getContext('2d');
   const cx = W / 2, cy = H * 0.42, R = Math.hypot(W, H);
   g.fillStyle = '#3d1170';
