@@ -1,0 +1,15 @@
+{
+  "name": "BOBBLECAM ★ ボブルカム",
+  "short_name": "BOBBLECAM",
+  "description": "Arcade goo camera: snap a photo, then smear, grow, shrink and swirl it.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1a0b2e",
+  "theme_color": "#ff2e88",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
