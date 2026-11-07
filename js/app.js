@@ -1,5 +1,6 @@
 import * as sfx from './sfx.js';
 import { START_SOUNDS } from './start-sounds.js';
+import { END_SOUNDS } from './end-sounds.js';
 import { Goo } from './goo.js';
 import { bobble, makeVideo, makeSticker } from './export.js';
 import { prepare as prepareCut, cutout } from './cutout.js';
@@ -265,6 +266,7 @@ async function shoot() {
   goo.render();
   state = 'goo';
   setMode('goo');
+  sfx.playEnd(); // the photo is done: random end sound
   updateUndo();
   fit();
   if (banner.classList.contains('hidden') || isCut) {
@@ -582,6 +584,7 @@ $('#btn-start').addEventListener('click', async () => {
     return;
   }
   sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
+  sfx.loadEnds(END_SOUNDS.map((f) => `assets/end/${f}`));
   if (cutBg) prepareCut().catch((e) => console.warn('cutout not ready', e));
   $('#title').classList.add('hidden');
   toCamera();

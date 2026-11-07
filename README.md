@@ -2,7 +2,7 @@
 
 Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/rockenwocken/starshot): Foto machen, dann wie in *Kai's Power Goo* das Gesicht verschmieren, aufblasen, schrumpfen und verdrehen.
 
-**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage (dieselben wie bei STARSHOT) → das Photo-Girl fährt von unten bis zur Hüfte ins Bild, schneller Countdown **3 · 2 · 1** → **BOBBLE UP!** → ganzer Bildschirm wird weiß (Blitz) und das Foto wird gemacht → Girl fährt wieder runter → Hintergrund weg → Goo-Editor.
+**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage → das Photo-Girl fährt von unten bis zur Hüfte ins Bild, schneller Countdown **3 · 2 · 1** → **BOBBLE UP!** → ganzer Bildschirm wird weiß (Blitz) und das Foto wird gemacht → Girl fährt wieder runter → Hintergrund weg → Goo-Editor mit zufälligem End-Sound.
 
 **Blitz:** Bei der Selfie-Kamera wird immer der ganze Bildschirm kurz weiß, das leuchtet das Gesicht an (am besten Bildschirmhelligkeit hoch). Bei der Rückkamera prüft die App die Helligkeit und schaltet bei Dunkelheit kurz die Taschenlampe als Blitz ein.
 
@@ -62,20 +62,22 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
 | `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
 | `js/sfx.js` | Alle Geräusche, Goo-Sounds ganz unten (`squish`, `gooHold`) |
-| `js/start-sounds.js` + `assets/start/` | Start-Ansagen (aus STARSHOT übernommen) |
+| `js/start-sounds.js` + `assets/start/` | Start-Ansagen (eine zufällig bei SHOT!) |
+| `js/end-sounds.js` + `assets/end/` | End-Sounds (einer zufällig, wenn der Editor aufgeht) |
 
 ## Credits
 
-Start-Ansagen von [Freesound.org](https://freesound.org) (gekürzt, lautstärke-angeglichen, als MP3), wie bei STARSHOT:
-- synergyxxx69: „so dance“-Reihe (#482370, #482373–#482380)
+Alle Sounds sind gekürzt, lautstärke-angeglichen und als MP3 gespeichert (End-Sounds max. 7 s).
+
+Start-Ansagen von [Freesound.org](https://freesound.org):
+- synergyxxx69: „so dance“-Reihe (#482374, #482375, #482377, #482379)
 - unfa: scream let's go (#188488)
 - reitanna: let's go (#241581), oh yes (#242693)
-- audeption: let's go out and have fun (#478759)
 - legnalegna55: oh yeah (#539277)
-- lovecraft_xavier: moans (#660304), moan (#660305)
 - mt4000: ready let's go high (#664605)
-- rezidentevil: girl says uwu (#708541)
-- bing bam boom: aus Sound-Sammlungen im Netz, nur für private Nutzung
+- ok let's go (turbopoliep)
+
+End-Sounds: aus Sound-Sammlungen im Netz, nur für private Nutzung.
 
 Freisteller: [MediaPipe Selfie Segmentation](https://github.com/google/mediapipe) (Apache 2.0)
 
