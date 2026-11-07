@@ -68,7 +68,7 @@ Geht die App in den Hintergrund (Teilen-Menü, App-Wechsel), pausiert jeder Ton 
 
 ## Rang und Score
 
-Der Score hängt davon ab, wie stark und wie viel vom Bild gegoot wurde, bei TALK zählen Lautstärke und Pitch extra, dazu etwas Glück. Ränge: SSS ab 1.050.000, S ab 950.000, A ab 850.000, B ab 700.000, darunter F(LAT). Titel-Wörter stehen in `js/words.js`.
+Der Score hängt davon ab, wie stark und wie viel vom Bild gegoot wurde, bei TALK zählen Lautstärke und Pitch extra, dazu etwas Glück. Ränge: SSS ab 1.050.000, S ab 950.000, A ab 850.000, B ab 700.000, darunter F(ART). Titel-Wörter stehen in `js/words.js`.
 
 Beim Speichern/Teilen zeigt der Banner „BOBOLATING…“, solange das Video entsteht.
 

@@ -28,5 +28,5 @@ export function rank(s) {
   if (s >= 950000) return 'S';
   if (s >= 850000) return 'A';
   if (s >= 700000) return 'B';
-  return 'F(LAT)';
+  return 'F(ART)';
 }
