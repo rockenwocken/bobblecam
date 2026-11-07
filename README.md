@@ -82,6 +82,9 @@ Knöpfe, Regler, Rahmen, Pegel und Pitch-Rad sind im 8-Bit-Arcade-Stil (eckige P
 
 ## Anpassen
 
+Nach jeder Änderung `python3 bump-version.py` ausführen: das hängt eine neue Versionsnummer an alle Script- und Style-Dateien, damit Handys nie alte und neue Dateien aus dem Cache mischen.
+
+
 | Datei | Inhalt |
 |---|---|
 | `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |

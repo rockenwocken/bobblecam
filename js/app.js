@@ -1,13 +1,13 @@
-import * as sfx from './sfx.js';
-import { START_SOUNDS } from './start-sounds.js';
-import { END_SOUNDS } from './end-sounds.js';
-import { Goo } from './goo.js';
-import { bobble, makeVideo } from './export.js';
-import * as talk from './mouth.js';
-import { initIcons, pxIcon } from './pixel-icons.js';
-import { makeFrame, FW, FH } from './frame.js';
-import * as words from './words.js';
-import { prepare as prepareCut, cutout } from './cutout.js';
+import * as sfx from './sfx.js?v=202611072047';
+import { START_SOUNDS } from './start-sounds.js?v=202611072047';
+import { END_SOUNDS } from './end-sounds.js?v=202611072047';
+import { Goo } from './goo.js?v=202611072047';
+import { bobble, makeVideo } from './export.js?v=202611072047';
+import * as talk from './mouth.js?v=202611072047';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072047';
+import { makeFrame, FW, FH } from './frame.js?v=202611072047';
+import * as words from './words.js?v=202611072047';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072047';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -435,7 +435,8 @@ function frameFor(kind) {
       extra = avg * 90000 + Math.abs(pitch) * 3000;
     }
   }
-  const sc = words.score(goo.amount(), extra, photoLuck);
+  const amt = typeof goo.amount === 'function' ? goo.amount() : { strength: 20, cover: 0.1 };
+  const sc = words.score(amt, extra, photoLuck);
   return makeFrame({ title: photoTitle, rank: words.rank(sc), score: sc, tag });
 }
 const talkInfo = () => (pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
