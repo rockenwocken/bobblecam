@@ -32,7 +32,7 @@ Nach **➜ NEXT** ertönt „Choose your fighter!“ und oben stehen zwei umrand
 
 **LOOP** (Kachel zeigt dein Bild live wackelnd): Das Bild wackelt in einer Schleife zwischen Original und Goo-Version, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
 - **SAVE** speichert die Animation als Video (MP4, sonst WebM), mind. 3 Sekunden
-- **SHARE** schickt das Video übers Teilen-Menü (blinkt der Knopf pink, nochmal tippen)
+- **SHARE** fragt erst **VIDEO** oder **GIF**: VIDEO schickt das MP4, GIF eine Endlosschleife (480 px breit, ein Wackler im eingestellten Tempo, mit Rahmen) übers Teilen-Menü (blinkt der Knopf pink, nochmal tippen)
 
 **TALK** (Kachel mit dem Mund): Das Mikrofon steuert das Bild. Still = Vorher, je lauter, desto mehr Goo, zappelig wie ein sprechender Mund. Der Pegel läuft als LED-Anzeige unter dem Bild mit.
 - **HOLD** gedrückt halten = Aufnahme (max. 10 s, Restzeit im Knopf), loslassen = fertig
