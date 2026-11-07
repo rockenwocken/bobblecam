@@ -201,3 +201,7 @@ export async function exportTake(take, semis, canvas, onFrame, muted) {
   src.disconnect(); ps.disconnect(); g.disconnect();
   return { blob: new Blob(chunks, { type: type.split(';')[0] }), ext: type.includes('mp4') ? 'mp4' : 'webm' };
 }
+
+/** pause / continue the take playback with the rest of the page */
+export function suspendAudio() { if (ac && ac.state === 'running') ac.suspend(); }
+export function resumeAudio() { if (ac && ac.state === 'suspended') ac.resume(); }

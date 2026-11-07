@@ -59,6 +59,12 @@ Auf dem Handy in Chrome öffnen → Menü → *Zum Startbildschirm hinzufügen* 
 
 Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8000` öffnen.
 
+## Videos
+
+Beide Videos (LOOP und TALK) bekommen einen Rahmen im STARSHOT-Stil: Verlauf mit Punkten, großes BOBBLECAM-Logo mit Sternen, das Bild mit schwarzem Rand und ボブルカム-Schild, unten eine Tafel mit Titel (BOBBLE LOOP! / TALK BOBBLE!), Info-Zeile (BEFORE <> AFTER bzw. Pitch) und Datum. Format 1080×1700. (STARSHOT-Rahmen, `js/frame.js`)
+
+Geht die App in den Hintergrund (Teilen-Menü, App-Wechsel), pausiert jeder Ton und läuft danach weiter.
+
 ## Zurück-Taste
 
 Die Zurück-Taste vom Handy oder Browser geht in der App einen Bildschirm zurück: LOOP/TALK → Auswahl → Editor → (zweimal drücken) Kamera → Startbildschirm. Erst vom Startbildschirm aus verlässt sie die App.

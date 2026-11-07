@@ -5,6 +5,7 @@ import { Goo } from './goo.js';
 import { bobble, makeVideo } from './export.js';
 import * as talk from './mouth.js';
 import { initIcons, pxIcon } from './pixel-icons.js';
+import { makeFrame, FW, FH } from './frame.js';
 import { prepare as prepareCut, cutout } from './cutout.js';
 
 // ---------- config ----------
@@ -484,18 +485,19 @@ async function build(kind) {
     let out;
     if (kind === 'video') {
       const rec = document.createElement('canvas');
-      rec.width = W; rec.height = H;
+      rec.width = FW; rec.height = FH;
       const rg = rec.getContext('2d');
+      const frame = makeFrame('BOBBLE LOOP!', 'BEFORE <> AFTER');
       const draw = (ph) => {
         goo.render(bobble(ph % 1));
-        if (isCut) rg.drawImage(bgCv, 0, 0); else rg.clearRect(0, 0, W, H);
-        rg.drawImage(gooCv, 0, 0);
+        frame(rg, gooCv, isCut ? bgCv : null);
       };
       const { blob, ext } = await makeVideo(rec, draw, period());
       out = { key, blob, name: fileName(ext) };
     } else if (kind === 'talk') {
       exporting = true;
       try {
+        talkFrame = makeFrame('TALK BOBBLE!', pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
         const draw = (t) => { exportT = t; goo.render(talk.levelAt(take, t)); drawRec(); };
         const { blob, ext } = await talk.exportTake(take, pitch, recCv, draw, muted);
         out = { key, blob, name: fileName(ext) };
@@ -592,7 +594,8 @@ const wheelCv = $('#wheel-cv');
 const whg = wheelCv.getContext('2d');
 const wheelVal = $('#wheel-val');
 const recCv = document.createElement('canvas');
-recCv.width = W; recCv.height = H;
+recCv.width = FW; recCv.height = FH;
+let talkFrame = null;
 const rg = recCv.getContext('2d');
 const COLS = 28;
 const levels = new Array(COLS).fill(0);
@@ -625,8 +628,7 @@ function leaveTalk() {
 }
 
 function drawRec() {
-  if (isCut) rg.drawImage(bgCv, 0, 0); else rg.clearRect(0, 0, W, H);
-  rg.drawImage(gooCv, 0, 0);
+  talkFrame(rg, gooCv, isCut ? bgCv : null);
 }
 
 // LED level meter: 28 columns × 5 segments, drawn at 1 canvas px = 1 "pixel"
@@ -817,6 +819,16 @@ function fit() {
   screenEl.style.width = `${Math.floor(w)}px`;
   screenEl.style.height = `${Math.floor(h)}px`;
 }
+
+// ---------- pause all sound while the page is in the background ----------
+function syncAudioToFocus() {
+  const away = document.hidden || !document.hasFocus();
+  if (away) { sfx.suspendAudio(); talk.suspendAudio(); } else { sfx.resumeAudio(); talk.resumeAudio(); }
+}
+document.addEventListener('visibilitychange', syncAudioToFocus);
+window.addEventListener('blur', syncAudioToFocus);
+window.addEventListener('focus', syncAudioToFocus);
+window.addEventListener('pagehide', syncAudioToFocus);
 
 // ---------- phone / browser back button ----------
 // One extra history entry is kept while the app runs. Pressing back uses it up,

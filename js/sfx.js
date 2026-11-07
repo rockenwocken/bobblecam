@@ -405,3 +405,7 @@ export function shutter() {
 export function rewind() {
   tone({ type: 'triangle', f: 900, f2: 200, dur: 0.25, vol: 0.3 });
 }
+
+/** pause / continue everything (page in the background, share sheet open) */
+export function suspendAudio() { if (ctx && ctx.state === 'running') ctx.suspend(); }
+export function resumeAudio() { if (ctx && ctx.state === 'suspended') ctx.resume(); }
