@@ -2,7 +2,9 @@
 
 Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/rockenwocken/starshot): Foto machen, dann wie in *Kai's Power Goo* das Gesicht verschmieren, aufblasen, schrumpfen und verdrehen.
 
-**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage (dieselben wie bei STARSHOT) → Posen-Aufgabe → schneller Countdown **3 · 2 · 1** → Foto → Hintergrund weg → Goo-Editor.
+**Ablauf:** **PRESS START** → **SHOT!** → das Photo-Girl fährt von unten ins Bild, zufällige Start-Ansage (dieselben wie bei STARSHOT) → schneller Countdown **3 · 2 · 1** → **BOBBLE UP!** → ganzer Bildschirm wird weiß (Blitz) und das Foto wird gemacht → Girl fährt wieder runter → Hintergrund weg → Goo-Editor.
+
+**Blitz:** Bei der Selfie-Kamera wird immer der ganze Bildschirm kurz weiß, das leuchtet das Gesicht an (am besten Bildschirmhelligkeit hoch). Bei der Rückkamera prüft die App die Helligkeit und schaltet bei Dunkelheit kurz die Taschenlampe als Blitz ein.
 
 ## Hintergrund entfernen
 
@@ -58,7 +60,7 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 | `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |
 | `js/export.js` | Video-Aufnahme und animierter WebP-Sticker |
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
-| `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Posen (`POSES`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
+| `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
 | `js/sfx.js` | Alle Geräusche, Goo-Sounds ganz unten (`squish`, `gooHold`) |
 | `js/start-sounds.js` + `assets/start/` | Start-Ansagen (aus STARSHOT übernommen) |
 

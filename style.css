@@ -129,7 +129,7 @@ html, body {
 #video { position: fixed; left: -9999px; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
 
 /* ---------- overlays ---------- */
-#fx { position: absolute; inset: 0; pointer-events: none; container-type: size; }
+#fx { position: absolute; inset: 0; pointer-events: none; container-type: size; z-index: 50; }
 
 .hidden { display: none !important; }
 
@@ -191,7 +191,7 @@ html, body {
   text-shadow: 1.6cqw 1.6cqw 0 var(--pink), 3cqw 3cqw 0 var(--ink);
   animation: countPop .9s ease-out forwards;
 }
-.count.go { font-size: 26cqw; color: var(--cyan); }
+.count.go { font-size: 16cqw; line-height: .95; white-space: pre-line; text-align: center; color: var(--cyan); }
 @keyframes countPop {
   0% { transform: scale(2.4) rotate(-12deg); opacity: 0; }
   18% { transform: scale(.9) rotate(4deg); opacity: 1; }
@@ -394,3 +394,39 @@ button:disabled { opacity: .45; cursor: default; }
 #btn-cut.cutting { background: var(--pink); color: var(--white); text-shadow: 2px 2px 0 var(--ink); }
 #app:not(.cut) #bg, #app.mode-cam #bg { visibility: hidden; }
 @media (max-width: 380px) { #controls .pill { width: 60px; height: 60px; } #controls { gap: 10px; } }
+
+/* photo girl: slides up over everything except banner, countdown and flash */
+.girl {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: auto;
+  z-index: 40;
+  pointer-events: none;
+  transform: translateY(105%);
+  visibility: hidden;
+  filter: drop-shadow(0 -6px 18px rgba(255, 46, 136, .45));
+}
+.girl.up {
+  visibility: visible;
+  transform: translateY(var(--girl-up, 0px));
+  transition: transform .55s cubic-bezier(.2, 1.35, .4, 1);
+}
+.girl.down {
+  transform: translateY(105%);
+  transition: transform .4s cubic-bezier(.5, 0, .9, .4), visibility 0s .4s;
+  visibility: hidden;
+}
+
+/* whole-screen flash */
+#bigflash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+}
+#bigflash.on { opacity: 1; }
+#bigflash.fade { opacity: 0; transition: opacity .3s ease-out; }

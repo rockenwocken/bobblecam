@@ -10,17 +10,6 @@ const COUNT_STEP = 450; // ms per countdown number
 const VOICE_WAIT = 1.3; // s of start voice before the countdown kicks in (the voice keeps playing)
 const R_MIN = 30, R_MAX = 520;
 const RATE = { grow: 1.1, shrink: 1.1, swirl: 2.6, ungoo: 3.5 }; // per second while held
-const POSES = [
-  { text: 'MAKE A FUNNY FACE!', tag: 'へんがお！' },
-  { text: 'PUFF YOUR CHEEKS!', tag: 'ぷくー！' },
-  { text: 'BIG EYES! BIG EYES!', tag: 'じーっ！' },
-  { text: 'OPEN WIDE!', tag: 'あーん！' },
-  { text: 'FLEX LIKE A WRESTLER!', tag: 'ムキムキ！' },
-  { text: 'SMILE LIKE A SHARK!', tag: 'ニヤリ！' },
-  { text: 'LOOK SURPRISED!', tag: 'えっ？！' },
-  { text: 'KISSY FACE!', tag: 'チュー！' },
-];
-const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
 // ---------- dom ----------
 const $ = (s) => document.querySelector(s);
@@ -95,14 +84,6 @@ function showCount(t) {
   countEl.style.animation = '';
 }
 
-function flash() {
-  flashEl.classList.remove('on');
-  void flashEl.offsetWidth;
-  flashEl.classList.add('on');
-  screenEl.classList.remove('shake');
-  void screenEl.offsetWidth;
-  screenEl.classList.add('shake');
-}
 
 // ---------- camera ----------
 async function startCamera() {
@@ -176,6 +157,72 @@ function toCamera() {
   fit();
 }
 
+// ---------- photo girl ----------
+const girl = $('#girl');
+/** she fills the width; if that makes her taller than the screen, her feet go off the bottom */
+function girlUp() {
+  const h = girl.getBoundingClientRect().height || window.innerWidth * 1.5;
+  const off = Math.max(0, h - window.innerHeight * 0.92);
+  girl.style.setProperty('--girl-up', `${-off}px`);
+  girl.classList.remove('down');
+  girl.classList.add('up');
+}
+async function girlDown() {
+  girl.classList.remove('up');
+  girl.classList.add('down');
+  await wait(450);
+}
+
+// ---------- flash ----------
+const bigFlash = $('#bigflash');
+const track = () => stream && stream.getVideoTracks()[0];
+
+/** rear camera only: is it too dark for a good photo? */
+function isDark() {
+  if (facing === 'user') return false;
+  const t = track();
+  try {
+    const st = t.getSettings();
+    if ((st.iso && st.iso >= 1600) || (st.exposureTime && st.exposureTime >= 330)) return true;
+  } catch (e) { /* not reported */ }
+  // average brightness of the preview (auto exposure brightens a lot, so the bar is low)
+  const c = document.createElement('canvas');
+  c.width = 48; c.height = 64;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(video, 0, 0, 48, 64);
+  const d = g.getImageData(0, 0, 48, 64).data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+  return sum / (d.length / 4) < 70;
+}
+async function torch(on) {
+  const t = track();
+  try {
+    if (!t || !t.getCapabilities || !t.getCapabilities().torch) return false;
+    await t.applyConstraints({ advanced: [{ torch: on }] });
+    return true;
+  } catch (e) { return false; }
+}
+
+/** white screen (and the torch on the rear cam if it's dark), take the picture, fade out */
+async function snap(dark) {
+  let lit = false;
+  if (dark) {
+    lit = await torch(true);
+    if (lit) await wait(350); // give auto exposure a moment
+  }
+  bigFlash.classList.remove('fade');
+  bigFlash.classList.add('on');
+  await wait(facing === 'user' ? 180 : 60); // the white screen lights the selfie face
+  drawFrame();
+  sfx.shutter();
+  if (lit) torch(false);
+  bigFlash.classList.add('fade');
+  bigFlash.classList.remove('on');
+  await wait(320);
+  bigFlash.classList.remove('fade');
+}
+
 async function shoot() {
   if (state !== 'ready') return;
   sfx.initAudio();
@@ -183,24 +230,25 @@ async function shoot() {
   btnShoot.disabled = true;
   btnFlip.disabled = true;
   btnCut.disabled = true;
+  girlUp();
 
   showBanner({ text: 'GET READY!', tag: 'いくぞ！' });
   const vd = sfx.playVoice();
   await wait(Math.min(vd, VOICE_WAIT) * 1000);
 
-  showBanner(pick(POSES));
+  hideBanner();
   sfx.beat(4, COUNT_STEP / 1000);
+  const dark = isDark(); // check the light while the scene is still unlit
   for (const n of [3, 2, 1]) {
     showCount(String(n));
     sfx.beep(false);
     await wait(COUNT_STEP);
   }
-  showCount('GOO!');
+  showCount('BOBBLE\nUP!');
   sfx.beep(true);
-  sfx.shutter();
-  drawFrame();
-  flash();
+  await snap(dark);
   hideBanner();
+  await girlDown();
 
   stopCamera();
   let photo = camCv;
