@@ -403,7 +403,8 @@ button:disabled { opacity: .45; cursor: default; }
   position: fixed;
   left: 50%;
   bottom: 0;
-  width: 150vw;
+  /* phone: 1.5× screen width; wide screens: capped by height so she covers about half the screen */
+  width: min(150vw, 68vh);
   max-width: none;
   height: auto;
   z-index: 40;
