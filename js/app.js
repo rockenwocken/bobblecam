@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072130';
-import { START_SOUNDS } from './start-sounds.js?v=202611072130';
-import { END_SOUNDS } from './end-sounds.js?v=202611072130';
-import { Goo } from './goo.js?v=202611072130';
-import { bobble, makeVideo, makeGif, suspendMusic, resumeMusic } from './export.js?v=202611072130';
-import * as talk from './mouth.js?v=202611072130';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072130';
-import { makeFrame, FW, FH } from './frame.js?v=202611072130';
-import { paintBubbles } from './bubble-bg.js?v=202611072130';
-import * as words from './words.js?v=202611072130';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072130';
+import * as sfx from './sfx.js?v=202611072135';
+import { START_SOUNDS } from './start-sounds.js?v=202611072135';
+import { END_SOUNDS } from './end-sounds.js?v=202611072135';
+import { Goo } from './goo.js?v=202611072135';
+import { bobble, makeVideo, makeGif, suspendMusic, resumeMusic, startMusic, stopMusic } from './export.js?v=202611072135';
+import * as talk from './mouth.js?v=202611072135';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072135';
+import { makeFrame, FW, FH } from './frame.js?v=202611072135';
+import { paintBubbles } from './bubble-bg.js?v=202611072135';
+import * as words from './words.js?v=202611072135';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072135';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -462,6 +462,7 @@ const pv = preview.getContext('2d');
 
 function toPick() {
   if (typeof closeShareChoice === 'function') closeShareChoice();
+  if (state === 'anim' && !busy) stopMusic();
   if (state === 'goo') {
     sfx.click();
     if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
@@ -508,7 +509,9 @@ function toAnim() {
   viewFrame = frameFor('loop');
   fit();
   showBanner({ text: 'BEFORE ⇄ AFTER!', tag: 'ビフォー・アフター！' }, 1800);
+  startMusic(SONG, muted); // plays the whole time on the LOOP page
 }
+const SONG = 'assets/hollareiduljoeh.mp3';
 function backToGoo() {
   if (busy) return;
   sfx.click();
@@ -543,7 +546,10 @@ async function build(kind) {
         goo.render(bobble(ph % 1));
         frame(rg, gooCv, isCut ? bgCv : null);
       };
-      const { blob, ext } = await makeVideo(rec, draw, period(), 3, 'assets/hollareiduljoeh.mp3', muted);
+      stopMusic(); // the video starts the song from its beginning
+      let res;
+      try { res = await makeVideo(rec, draw, period(), 3, SONG, muted); } finally { if (state === 'anim') startMusic(SONG, muted); }
+      const { blob, ext } = res;
       out = { key, blob, name: fileName(ext) };
     } else if (kind === 'gif') {
       const rec = document.createElement('canvas');

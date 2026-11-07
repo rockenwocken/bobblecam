@@ -1,5 +1,5 @@
 // Turns the before/after bobble into a video for the gallery, or into a looping GIF.
-import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072130';
+import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072135';
 
 /** 0 → 1 → 0 over one period, soft at both ends */
 export const bobble = (phase) => 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
@@ -27,6 +27,32 @@ async function song(url) {
     songs.set(url, fetch(url).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej))));
   }
   return songs.get(url);
+}
+// the song on the LOOP page: loops for as long as the page is open
+let bgm = null;
+let musicWanted = false;
+export async function startMusic(url, muted) {
+  musicWanted = true;
+  if (bgm) return;
+  let buf;
+  try { buf = await song(url); } catch (e) { console.warn('music not loaded', e); return; }
+  if (!musicWanted || bgm) return; // page left while loading
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const g = ac.createGain();
+  g.gain.value = muted ? 0 : 0.8;
+  src.connect(g).connect(ac.destination);
+  src.start();
+  bgm = { src, g };
+}
+export function stopMusic() {
+  musicWanted = false;
+  if (!bgm) return;
+  try { bgm.src.stop(); } catch (e) { /* already stopped */ }
+  bgm.src.disconnect();
+  bgm.g.disconnect();
+  bgm = null;
 }
 export function suspendMusic() { if (ac && ac.state === 'running') ac.suspend(); }
 export function resumeMusic() { if (ac && ac.state === 'suspended') ac.resume(); }

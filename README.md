@@ -30,7 +30,7 @@ Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Hand
 
 Nach **➜ NEXT** ertönt „Choose your fighter!“ und oben stehen zwei umrandete Kacheln zur Wahl, darunter flext Holgi. **◀ EDIT** geht zurück in den Editor, **⬇ JPG** speichert nur das fertige Nachher-Bild als JPG.
 
-**LOOP** (Kachel zeigt dein Bild live wackelnd): Das Bild wackelt in einer Schleife zwischen Original und Goo-Version, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
+**LOOP** (Kachel zeigt dein Bild live wackelnd): Solange die Seite offen ist, läuft „Hollareiduljöh“ in Schleife (ab Sekunde 6 des Originals). Das Bild wackelt in einer Schleife zwischen Original und Goo-Version, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
 - **SAVE** speichert die Animation als Video (MP4, sonst WebM) mit „Hollareiduljöh“ (`assets/hollareiduljoeh.mp3`) als Musik, mind. 3 Sekunden
 - **SHARE** fragt erst **VIDEO** oder **GIF**: VIDEO schickt das MP4 (mit „Hollareiduljöh“ als Musik, blendet am Ende aus), GIF eine Endlosschleife (480 px breit, ein Wackler im eingestellten Tempo, mit Rahmen) übers Teilen-Menü (blinkt der Knopf pink, nochmal tippen)
 
