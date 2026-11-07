@@ -6,6 +6,7 @@ import { bobble, makeVideo } from './export.js';
 import * as talk from './mouth.js';
 import { initIcons, pxIcon } from './pixel-icons.js';
 import { makeFrame, FW, FH } from './frame.js';
+import * as words from './words.js';
 import { prepare as prepareCut, cutout } from './cutout.js';
 
 // ---------- config ----------
@@ -266,6 +267,7 @@ async function shoot() {
   }
   goo.setImage(photo);
   goo.render();
+  newPhotoTitle();
   state = 'goo';
   setMode('goo');
   sfx.playEnd(); // the photo is done: random end sound
@@ -415,6 +417,27 @@ function drawFramed() {
   fg.setTransform(framedCv.width / FW, 0, 0, framedCv.height / FH, 0, 0);
   viewFrame(fg, gooCv, isCut ? bgCv : null);
 }
+let photoTitle = 'WOBBLY MOCHI SQUAD';
+let photoLuck = 0.5;
+/** a fresh funny title and a bit of luck for every new photo */
+function newPhotoTitle() {
+  photoTitle = words.title();
+  photoLuck = Math.random();
+}
+/** the frame for 'shot' (JPG), 'loop' or 'talk', with title, rank and score */
+function frameFor(kind) {
+  let extra = 0, tag = 'BOBBLECAM';
+  if (kind === 'loop') tag = 'BOBBLECAM LOOP';
+  if (kind === 'talk') {
+    tag = take ? `TALK ★ ${talkInfo()}` : 'TALK ★ HOLD & SHOUT!';
+    if (take) {
+      const avg = take.env.reduce((a, e) => a + e[1], 0) / Math.max(1, take.env.length);
+      extra = avg * 90000 + Math.abs(pitch) * 3000;
+    }
+  }
+  const sc = words.score(goo.amount(), extra, photoLuck);
+  return makeFrame({ title: photoTitle, rank: words.rank(sc), score: sc, tag });
+}
 const talkInfo = () => (pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
 
 // ---------- pick screen: LOOP or TALK ----------
@@ -445,7 +468,7 @@ async function saveJpg() {
   c.width = FW; c.height = FH;
   const g = c.getContext('2d');
   goo.render(1);
-  makeFrame('BOBBLE SHOT!', 'AFTER')(g, gooCv, isCut ? bgCv : null);
+  frameFor('shot')(g, gooCv, isCut ? bgCv : null);
   const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.92));
   download({ blob, name: fileName('jpg') });
 }
@@ -465,7 +488,7 @@ function toAnim() {
   phase = 0;
   exportsCache = {};
   clearReady();
-  viewFrame = makeFrame('BOBBLE LOOP!', 'BEFORE <> AFTER');
+  viewFrame = frameFor('loop');
   fit();
   showBanner({ text: 'BEFORE ⇄ AFTER!', tag: 'ビフォー・アフター！' }, 1800);
 }
@@ -498,7 +521,7 @@ async function build(kind) {
       const rec = document.createElement('canvas');
       rec.width = FW; rec.height = FH;
       const rg = rec.getContext('2d');
-      const frame = makeFrame('BOBBLE LOOP!', 'BEFORE <> AFTER');
+      const frame = frameFor('loop');
       const draw = (ph) => {
         goo.render(bobble(ph % 1));
         frame(rg, gooCv, isCut ? bgCv : null);
@@ -509,7 +532,7 @@ async function build(kind) {
       exporting = true;
       try {
         clearTimeout(pitchTimer);
-        talkFrame = makeFrame('TALK BOBBLE!', talkInfo());
+        talkFrame = frameFor('talk');
         const draw = (t) => { exportT = t; goo.render(talk.levelAt(take, t)); drawRec(); };
         const { blob, ext } = await talk.exportTake(take, pitch, recCv, draw, muted);
         out = { key, blob, name: fileName(ext) };
@@ -567,7 +590,7 @@ async function act(name) {
   sfx.click();
   const t0 = Date.now();
   a.btn.classList.add('busy');
-  showBanner({ text: 'RECORDING…', tag: 'ろくがちゅう！' });
+  showBanner({ text: 'BOBOLATING…', tag: 'ボボレーティング！' });
   let f;
   try {
     f = await build(a.kind);
@@ -631,7 +654,7 @@ async function toTalk() {
   setMode('talk');
   clearTake();
   levels.fill(0);
-  viewFrame = makeFrame('TALK BOBBLE!', 'HOLD & SHOUT!');
+  viewFrame = frameFor('talk');
   fit();
   showBanner({ text: 'HOLD & SHOUT!', tag: 'さけんで！' }, 1800);
 }
@@ -707,7 +730,7 @@ function setPitchTo(v) {
   clearTimeout(pitchTimer);
   pitchTimer = setTimeout(() => {
     talk.setPitch(pitch);
-    viewFrame = makeFrame('TALK BOBBLE!', talkInfo());
+    viewFrame = frameFor('talk');
   }, 140);
 }
 let wheelDrag = null;
@@ -766,7 +789,7 @@ function endTake(discard = false) {
   fit();
   drawWheel();
   talk.startPlayback(take, pitch, muted);
-  viewFrame = makeFrame('TALK BOBBLE!', talkInfo());
+  viewFrame = frameFor('talk');
   showBanner({ text: 'PITCH IT!', tag: 'ピッチ！' }, 1600);
 }
 function clearTake() {

@@ -40,8 +40,11 @@ function dateStamp() {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-/** title: big footer line, info: small line under it. Returns draw(ctx, photo, backdrop|null). */
-export function makeFrame(title, info) {
+/**
+ * Footer like the STARSHOT print: funny title, RANK ★ SCORE, date ★ tag.
+ * Returns draw(ctx, photo, backdrop|null).
+ */
+export function makeFrame({ title, rank, score, tag }) {
   const base = document.createElement('canvas');
   base.width = FW; base.height = FH;
   const x = base.getContext('2d');
@@ -98,10 +101,10 @@ export function makeFrame(title, info) {
   x.fillText(title, cx, fy + 56);
   x.font = '24px "Press Start 2P"';
   x.fillStyle = '#00e5ff';
-  x.fillText(info, cx, fy + 112);
+  x.fillText(`RANK ${rank} ★ SCORE ${score.toLocaleString('en-US')}`, cx, fy + 112);
   x.font = '13px "Press Start 2P"';
   x.fillStyle = 'rgba(255,250,242,0.55)';
-  x.fillText(`${dateStamp()}  ★  BOBBLECAM`, cx, fy + 146);
+  x.fillText(`${dateStamp()}  ★  ${tag}`, cx, fy + 146);
   x.restore();
 
   // things on top of the picture: frame line + kana tag

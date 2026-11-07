@@ -121,6 +121,17 @@ export class Goo {
   }
   get canUndo() { return this.history.length > 0; }
 
+  /** how much goo is on the picture: strength = average px moved where gooed, cover = gooed share 0..1 */
+  amount() {
+    const f = this.field;
+    let sum = 0, n = 0;
+    for (let i = 0; i < f.length; i += 2) {
+      const d = Math.hypot(f[i], f[i + 1]);
+      if (d > 1.5) { sum += d; n++; }
+    }
+    return { strength: n ? sum / n : 0, cover: n / (f.length / 2) };
+  }
+
   // ---------- field helpers ----------
   /** bilinear sample of the OLD field (this.tmp) at pixel position x,y → [dx,dy] */
   sample(x, y) {

@@ -62,9 +62,15 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 
 ## Videos
 
-Beide Videos (LOOP und TALK) und das JPG (BOBBLE SHOT!) bekommen einen Rahmen im STARSHOT-Stil, und die LOOP- und TALK-Seite zeigen das Bild schon mit diesem Rahmen: Verlauf mit Punkten, großes BOBBLECAM-Logo mit Sternen, das Bild mit schwarzem Rand und ボブルカム-Schild, unten eine Tafel mit Titel (BOBBLE LOOP! / TALK BOBBLE!), Info-Zeile (BEFORE <> AFTER bzw. Pitch) und Datum. Format 1080×1700. (STARSHOT-Rahmen, `js/frame.js`)
+Beide Videos (LOOP und TALK) und das JPG (BOBBLE SHOT!) bekommen einen Rahmen im STARSHOT-Stil, und die LOOP- und TALK-Seite zeigen das Bild schon mit diesem Rahmen: Verlauf mit Punkten, großes BOBBLECAM-Logo mit Sternen, das Bild mit schwarzem Rand und ボブルカム-Schild, unten eine Tafel wie bei STARSHOT: lustiger Titel (für jedes Foto neu, z. B. „WOBBLY ROBOT SAGA“), RANK ★ SCORE und Datum ★ Modus. Format 1080×1700. (STARSHOT-Rahmen, `js/frame.js`)
 
 Geht die App in den Hintergrund (Teilen-Menü, App-Wechsel), pausiert jeder Ton und läuft danach weiter.
+
+## Rang und Score
+
+Der Score hängt davon ab, wie stark und wie viel vom Bild gegoot wurde, bei TALK zählen Lautstärke und Pitch extra, dazu etwas Glück. Ränge: SSS ab 1.050.000, S ab 950.000, A ab 850.000, B ab 700.000, darunter F(LAT). Titel-Wörter stehen in `js/words.js`.
+
+Beim Speichern/Teilen zeigt der Banner „BOBOLATING…“, solange das Video entsteht.
 
 ## Zurück-Taste
 
