@@ -159,11 +159,8 @@ function toCamera() {
 
 // ---------- photo girl ----------
 const girl = $('#girl');
-/** she fills the width; if that makes her taller than the screen, her feet go off the bottom */
+/** slides in from the bottom, only the top half of her shows (see .girl in style.css) */
 function girlUp() {
-  const h = girl.getBoundingClientRect().height || window.innerWidth * 1.5;
-  const off = Math.max(0, h - window.innerHeight * 0.92);
-  girl.style.setProperty('--girl-up', `${-off}px`);
   girl.classList.remove('down');
   girl.classList.add('up');
 }
@@ -230,13 +227,13 @@ async function shoot() {
   btnShoot.disabled = true;
   btnFlip.disabled = true;
   btnCut.disabled = true;
-  girlUp();
 
   showBanner({ text: 'GET READY!', tag: 'いくぞ！' });
   const vd = sfx.playVoice();
   await wait(Math.min(vd, VOICE_WAIT) * 1000);
 
   hideBanner();
+  girlUp();
   sfx.beat(4, COUNT_STEP / 1000);
   const dark = isDark(); // check the light while the scene is still unlit
   for (const n of [3, 2, 1]) {

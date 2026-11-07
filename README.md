@@ -2,7 +2,7 @@
 
 Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/rockenwocken/starshot): Foto machen, dann wie in *Kai's Power Goo* das Gesicht verschmieren, aufblasen, schrumpfen und verdrehen.
 
-**Ablauf:** **PRESS START** → **SHOT!** → das Photo-Girl fährt von unten ins Bild, zufällige Start-Ansage (dieselben wie bei STARSHOT) → schneller Countdown **3 · 2 · 1** → **BOBBLE UP!** → ganzer Bildschirm wird weiß (Blitz) und das Foto wird gemacht → Girl fährt wieder runter → Hintergrund weg → Goo-Editor.
+**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage (dieselben wie bei STARSHOT) → das Photo-Girl fährt von unten bis zur Hüfte ins Bild, schneller Countdown **3 · 2 · 1** → **BOBBLE UP!** → ganzer Bildschirm wird weiß (Blitz) und das Foto wird gemacht → Girl fährt wieder runter → Hintergrund weg → Goo-Editor.
 
 **Blitz:** Bei der Selfie-Kamera wird immer der ganze Bildschirm kurz weiß, das leuchtet das Gesicht an (am besten Bildschirmhelligkeit hoch). Bei der Rückkamera prüft die App die Helligkeit und schaltet bei Dunkelheit kurz die Taschenlampe als Blitz ein.
 

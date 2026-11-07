@@ -15,6 +15,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
+  overflow-x: hidden;
   margin: 0;
   height: 100%;
   overflow: hidden;
@@ -395,26 +396,29 @@ button:disabled { opacity: .45; cursor: default; }
 #app:not(.cut) #bg, #app.mode-cam #bg { visibility: hidden; }
 @media (max-width: 380px) { #controls .pill { width: 60px; height: 60px; } #controls { gap: 10px; } }
 
-/* photo girl: slides up over everything except banner, countdown and flash */
+/* photo girl: slides up over everything except banner, countdown and flash.
+   Wider than the screen, only the top half of her (head to about the waist) comes into view. */
 .girl {
+  --girl-show: 52%; /* how much of her (from the top) is visible */
   position: fixed;
-  left: 0;
+  left: 50%;
   bottom: 0;
-  width: 100vw;
+  width: 150vw;
+  max-width: none;
   height: auto;
   z-index: 40;
   pointer-events: none;
-  transform: translateY(105%);
+  transform: translate(-50%, 105%);
   visibility: hidden;
   filter: drop-shadow(0 -6px 18px rgba(255, 46, 136, .45));
 }
 .girl.up {
   visibility: visible;
-  transform: translateY(var(--girl-up, 0px));
-  transition: transform .55s cubic-bezier(.2, 1.35, .4, 1);
+  transform: translate(-50%, calc(100% - var(--girl-show)));
+  transition: transform .5s cubic-bezier(.2, 1.35, .4, 1);
 }
 .girl.down {
-  transform: translateY(105%);
+  transform: translate(-50%, 105%);
   transition: transform .4s cubic-bezier(.5, 0, .9, .4), visibility 0s .4s;
   visibility: hidden;
 }
