@@ -2,7 +2,8 @@ import * as sfx from './sfx.js';
 import { START_SOUNDS } from './start-sounds.js';
 import { END_SOUNDS } from './end-sounds.js';
 import { Goo } from './goo.js';
-import { bobble, makeVideo, makeSticker } from './export.js';
+import { bobble, makeVideo } from './export.js';
+import { openMic, closeMic, readLevel, startRecording } from './mouth.js';
 import { prepare as prepareCut, cutout } from './cutout.js';
 
 // ---------- config ----------
@@ -36,7 +37,6 @@ const btnAgain = $('#btn-again');
 const speedEl = $('#speed');
 const btnVSave = $('#btn-vsave');
 const btnVShare = $('#btn-vshare');
-const btnSticker = $('#btn-sticker');
 
 // ---------- state ----------
 let facing = 'user';
@@ -403,14 +403,37 @@ btnAgain.addEventListener('click', async () => {
 /** speed slider 0..100 → seconds per bobble, 4 s (slow) … 0.4 s (fast) */
 const period = () => 4 * Math.pow(0.1, Number(speedEl.value) / 100);
 
+// ---------- pick screen: LOOP or TALK ----------
+const preview = $('#preview');
+const pv = preview.getContext('2d');
+
+function toPick() {
+  if (state === 'goo') {
+    sfx.click();
+    if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
+    ring.classList.add('hidden');
+    setSizeMode(false);
+  } else if (busy) return;
+  else sfx.click();
+  if (state === 'talk') leaveTalk();
+  clearReady();
+  hideBanner();
+  state = 'pick';
+  setMode('pick');
+}
+function drawPreview() {
+  phase = (phase + 1 / 60 / 1.6) % 1;
+  goo.render(bobble(phase));
+  const w = preview.width, h = preview.height;
+  if (isCut) pv.drawImage(bgCv, 0, 0, w, h); else pv.clearRect(0, 0, w, h);
+  pv.drawImage(gooCv, 0, 0, w, h);
+}
+
 function toAnim() {
-  if (state !== 'goo') return;
+  if (state !== 'pick') return;
   sfx.click();
-  if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
   state = 'anim';
   setMode('anim');
-  ring.classList.add('hidden');
-  setSizeMode(false);
   phase = 0;
   exportsCache = {};
   clearReady();
@@ -420,6 +443,7 @@ function toAnim() {
 function backToGoo() {
   if (busy) return;
   sfx.click();
+  hideBanner();
   state = 'goo';
   setMode('goo');
   clearReady();
@@ -433,7 +457,7 @@ function fileName(ext) {
   return `bobblecam-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
 }
 
-/** makes (or reuses) the video or sticker for the current speed */
+/** makes (or reuses) the video for the current speed */
 async function build(kind) {
   const key = speedEl.value;
   const c = exportsCache[kind];
@@ -452,9 +476,6 @@ async function build(kind) {
       };
       const { blob, ext } = await makeVideo(rec, draw, period());
       out = { key, blob, name: fileName(ext) };
-    } else {
-      const blob = await makeSticker(gooCv, (a) => goo.render(a), period(), isCut);
-      out = { key, blob, name: fileName('webp') };
     }
     exportsCache[kind] = out;
     return out;
@@ -484,13 +505,12 @@ async function shareFile({ blob, name }, title) {
 
 function clearReady() {
   ready = null;
-  [btnVSave, btnVShare, btnSticker].forEach((b) => b.classList.remove('ready', 'busy'));
+  [btnVSave, btnVShare].forEach((b) => b.classList.remove('ready', 'busy'));
 }
 
 const ACTIONS = {
   vsave: { btn: btnVSave, kind: 'video', run: (f) => download(f) },
   vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM') },
-  sticker: { btn: btnSticker, kind: 'sticker', run: (f) => shareFile(f, 'BOBBLECAM sticker') },
 };
 
 async function act(name) {
@@ -503,9 +523,7 @@ async function act(name) {
   sfx.click();
   const t0 = Date.now();
   a.btn.classList.add('busy');
-  showBanner(a.kind === 'video'
-    ? { text: 'RECORDING…', tag: 'ろくがちゅう！' }
-    : { text: 'MAKING STICKER…', tag: 'ステッカー！' });
+  showBanner({ text: 'RECORDING…', tag: 'ろくがちゅう！' });
   let f;
   try {
     f = await build(a.kind);
@@ -525,12 +543,125 @@ async function act(name) {
   showBanner({ text: 'READY! TAP AGAIN!', tag: 'できた！' });
 }
 
-$('#btn-save').addEventListener('click', toAnim);
-$('#btn-share').addEventListener('click', toAnim);
-$('#btn-back').addEventListener('click', backToGoo);
+$('#btn-next').addEventListener('click', toPick);
+$('#btn-pback').addEventListener('click', backToGoo);
+$('#pick-loop').addEventListener('click', toAnim);
+$('#pick-talk').addEventListener('click', toTalk);
+$('#btn-back').addEventListener('click', toPick);
+
+// ---------- talk screen: the mic drives the goo ----------
+const MAX_TAKE = 10; // seconds
+const btnHold = $('#btn-hold');
+const holdTime = $('#hold-time');
+const takeVideo = $('#take');
+const wave = $('#wave');
+const wg = wave.getContext('2d');
+const recCv = document.createElement('canvas');
+recCv.width = W; recCv.height = H;
+const rg = recCv.getContext('2d');
+const levels = new Array(68).fill(0);
+let rec = null; // { stop, t0, timer }
+let take = null; // { blob, name, url }
+
+async function toTalk() {
+  if (state !== 'pick') return;
+  sfx.click();
+  try {
+    await openMic();
+  } catch (e) {
+    showBanner({ text: 'NO MIC!', tag: 'マイクをゆるして！' }, 2500);
+    return;
+  }
+  state = 'talk';
+  setMode('talk');
+  clearTake();
+  levels.fill(0);
+  fit();
+  showBanner({ text: 'HOLD & SHOUT!', tag: 'さけんで！' }, 1800);
+}
+function leaveTalk() {
+  if (rec) stopTake(true);
+  clearTake();
+  closeMic();
+}
+
+function drawWave(l) {
+  levels.push(l);
+  levels.shift();
+  const w = wave.width, h = wave.height, n = levels.length, bw = w / n;
+  wg.clearRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) {
+    const v = Math.max(0.04, levels[i]);
+    const bh = v * (h - 8);
+    const hot = rec && i > n - 1 - Math.ceil((performance.now() - rec.t0) / 1000 * 60);
+    wg.fillStyle = hot ? (v > 0.75 ? '#ffe600' : '#ff2e88') : (v > 0.75 ? '#ffe600' : '#00e5ff');
+    wg.fillRect(i * bw + 1, (h - bh) / 2, bw - 2, bh);
+  }
+}
+function drawRec() {
+  if (isCut) rg.drawImage(bgCv, 0, 0); else rg.clearRect(0, 0, W, H);
+  rg.drawImage(gooCv, 0, 0);
+}
+
+function startTake(e) {
+  if (state !== 'talk' || rec || take) return;
+  e.preventDefault();
+  try { btnHold.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+  sfx.initAudio();
+  drawRec();
+  let stop;
+  try { stop = startRecording(recCv); } catch (err) {
+    showBanner({ text: 'OOPS!', tag: String(err.message || err) }, 2500);
+    return;
+  }
+  hideBanner();
+  rec = { stop, t0: performance.now() };
+  btnHold.classList.add('rec');
+  btnHold.querySelector('span').textContent = 'REC';
+  rec.timer = setInterval(() => {
+    const left = MAX_TAKE - (performance.now() - rec.t0) / 1000;
+    holdTime.textContent = `${Math.max(0, Math.ceil(left))}s`;
+    if (left <= 0) stopTake();
+  }, 100);
+}
+async function stopTake(discard = false) {
+  if (!rec) return;
+  const r = rec;
+  rec = null;
+  clearInterval(r.timer);
+  btnHold.classList.remove('rec');
+  btnHold.querySelector('span').textContent = 'HOLD';
+  holdTime.textContent = `${MAX_TAKE}s`;
+  const short = performance.now() - r.t0 < 500;
+  const { blob, ext } = await r.stop();
+  if (discard || state !== 'talk') return;
+  if (short) { showBanner({ text: 'HOLD IT LONGER!', tag: 'ながおし！' }, 1600); return; }
+  take = { blob, name: fileName(ext), url: URL.createObjectURL(blob) };
+  takeVideo.src = take.url;
+  app.classList.add('has-take');
+  takeVideo.play().catch(() => {});
+  sfx.playEnd();
+}
+function clearTake() {
+  takeVideo.pause();
+  takeVideo.removeAttribute('src');
+  takeVideo.load();
+  if (take) URL.revokeObjectURL(take.url);
+  take = null;
+  app.classList.remove('has-take');
+}
+
+btnHold.addEventListener('pointerdown', startTake);
+btnHold.addEventListener('pointerup', () => stopTake());
+btnHold.addEventListener('pointercancel', () => stopTake());
+btnHold.addEventListener('contextmenu', (e) => e.preventDefault());
+$('#btn-tback').addEventListener('click', toPick);
+$('#btn-tback2').addEventListener('click', toPick);
+$('#btn-retake').addEventListener('click', () => { sfx.click(); clearTake(); });
+$('#btn-tsave').addEventListener('click', () => { if (take) { sfx.click(); download(take); } });
+$('#btn-tshare').addEventListener('click', () => { if (take) { sfx.click(); shareFile(take, 'BOBBLECAM'); } });
 btnVSave.addEventListener('click', () => act('vsave'));
 btnVShare.addEventListener('click', () => act('vshare'));
-btnSticker.addEventListener('click', () => act('sticker'));
 speedEl.addEventListener('input', () => { if (ready) clearReady(); });
 
 // ---------- frame loop ----------
@@ -545,7 +676,15 @@ function loop(t) {
     else if (tool === 'swirl') goo.swirl(x, y, r, swirlDir * RATE.swirl * dt);
     else if (tool === 'ungoo') goo.ungoo(x, y, r, Math.min(1, RATE.ungoo * dt));
   }
-  if (state === 'anim') {
+  if (state === 'pick') drawPreview();
+  else if (state === 'talk') {
+    if (!take) {
+      const l = readLevel();
+      goo.render(l);
+      drawWave(l);
+      if (rec) drawRec();
+    }
+  } else if (state === 'anim') {
     if (!busy) phase = (phase + dt / period()) % 1;
     if (!busy) goo.render(bobble(phase));
   } else if (goo) goo.render();
@@ -576,6 +715,11 @@ $('#btn-start').addEventListener('click', async () => {
       return;
     }
   }
+  try {
+    // ask for camera and microphone in one go, so TALK mode never has to ask later
+    const both = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: true });
+    both.getTracks().forEach((t) => t.stop());
+  } catch (e) { /* mic (or both) refused: the camera is asked again below, TALK will say NO MIC */ }
   try {
     await startCamera();
   } catch (e) {

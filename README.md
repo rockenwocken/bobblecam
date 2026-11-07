@@ -10,7 +10,7 @@ Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/roc
 
 Der **✂**-Knopf neben dem Auslöser schaltet um zwischen **NO BG** (pink, Hintergrund wird nach dem Foto entfernt) und **BG ON** (Foto bleibt wie es ist). Die Einstellung wird gemerkt.
 
-Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Handy (Modell liegt in `assets/mediapipe/`). Hinter der freigestellten Person erscheint ein Arcade-Strahlenhintergrund, der auch im Video landet. Der Sticker wird ohne Hintergrund als Ausschnitt mit weißem Rand gebaut. Funktioniert am besten mit Gesicht und Oberkörper; findet es niemanden, bleibt das normale Foto.
+Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Handy (Modell liegt in `assets/mediapipe/`). Hinter der freigestellten Person erscheint ein Arcade-Strahlenhintergrund, der auch im Video landet. Funktioniert am besten mit Gesicht und Oberkörper; findet es niemanden, bleibt das normale Foto.
 
 ## Der Goo-Editor
 
@@ -23,18 +23,22 @@ Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Hand
 | **UNGOO** | Darüberwischen: diese Stelle wird wieder normal |
 | **UNDO** | Letzten Pinselstrich zurück (bis zu 30) |
 | **SIZE** | Antippen (Knopf blinkt gelb, „DRAG!“), dann mit dem Finger auf dem Bild ziehen: der Ring wächst mit, loslassen = fertig |
-| **SAVE / SHARE** | Öffnet den Vorher-Nachher-Bildschirm (siehe unten) |
 | **NEW** | Neues Foto (zweimal tippen, wenn schon gegoot wurde) |
+| **➜ NEXT** | Weiter zur Auswahl: LOOP oder TALK |
 
-## Vorher ⇄ Nachher
+## Auswahl: LOOP oder TALK
 
-Nach SAVE oder SHARE wackelt das Bild in einer Schleife zwischen Original und Goo-Version hin und her, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
+Nach **➜ NEXT** stehen zwei umrandete Kacheln zur Wahl, ◀ EDIT geht zurück in den Editor.
 
+**LOOP** (Kachel zeigt dein Bild live wackelnd): Das Bild wackelt in einer Schleife zwischen Original und Goo-Version, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
 - **SAVE** speichert die Animation als Video (MP4, sonst WebM), mind. 3 Sekunden
-- **SHARE** schickt das Video übers Teilen-Menü
-- **STICKER** macht einen animierten WebP-Sticker im WhatsApp-Format (512×512, transparent, unter 500 KB) und öffnet das Teilen-Menü
+- **SHARE** schickt das Video übers Teilen-Menü (blinkt der Knopf pink, nochmal tippen)
 
-Video wird in Echtzeit aufgenommen. Weil das Teilen-Menü nach ein paar Sekunden Wartezeit einen frischen Tipp braucht, blinkt der Knopf danach pink: einfach nochmal drauftippen.
+**TALK** (Kachel mit dem Mund): Das Mikrofon steuert das Bild. Still = Vorher, je lauter, desto mehr Goo, zappelig wie ein sprechender Mund. Der Pegel läuft als Wellenform unter dem Bild mit.
+- **HOLD** gedrückt halten = Aufnahme (max. 10 s, Restzeit im Knopf), loslassen = fertig
+- danach läuft die Aufnahme in Schleife mit Ton: **SAVE** (Video mit Ton), **SHARE**, **AGAIN** (neu aufnehmen)
+
+Kamera und Mikrofon werden beim PRESS START zusammen freigegeben.
 
 Bei GROW/SHRINK/SWIRL kann man den Finger beim Halten auch bewegen. Jedes Werkzeug hat sein eigenes, live synthetisiertes Geräusch.
 
@@ -58,7 +62,8 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 | Datei | Inhalt |
 |---|---|
 | `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |
-| `js/export.js` | Video-Aufnahme und animierter WebP-Sticker |
+| `js/export.js` | Video-Aufnahme für LOOP |
+| `js/mouth.js` | TALK: Mikrofon-Pegel und Video mit Ton |
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
 | `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
 | `js/sfx.js` | Alle Geräusche, Goo-Sounds ganz unten (`squish`, `gooHold`) |
