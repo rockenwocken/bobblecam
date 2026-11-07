@@ -37,7 +37,8 @@ Nach **➜ NEXT** ertönt „Choose your fighter!“ und oben stehen zwei umrand
 **TALK** (Kachel mit dem Mund): Das Mikrofon steuert das Bild. Still = Vorher, je lauter, desto mehr Goo, zappelig wie ein sprechender Mund. Der Pegel läuft als LED-Anzeige unter dem Bild mit.
 - **HOLD** gedrückt halten = Aufnahme (max. 10 s, Restzeit im Knopf), loslassen = fertig
 - danach läuft die Aufnahme in Schleife, das Bild wackelt genau wie aufgenommen
-- **PITCH-Rad** rechts neben dem Bild: nach oben ziehen = höher, nach unten = tiefer, bis zu 2 Oktaven (±24 Halbtöne) in jede Richtung, die Länge bleibt gleich. Das Rad bleibt stehen, wo man es loslässt, Doppeltipp = zurück auf 0
+- Nach dem Loslassen wird die Aufnahme auf eine kräftige, gleichmäßige Lautstärke gebracht (ohne Übersteuern), und das Wackeln wird aus dem lauter gemachten Ton neu berechnet
+- **PITCH-Rad** rechts neben dem Bild: nach oben ziehen = höher, nach unten = tiefer, bis zu 2 Oktaven (±24 Halbtöne) in jede Richtung, die Länge bleibt gleich. Gepitcht wird mit WSOLA (Silben bleiben ganz und verständlich, hoch = Micky-Maus, tief = Monster); der neue Ton kommt, sobald das Rad kurz ruht. Das Rad bleibt stehen, wo man es loslässt, Doppeltipp = zurück auf 0
 - **SAVE** (Video mit dem gepitchten Ton), **SHARE**, **AGAIN** (neu aufnehmen). Das Video wird dafür einmal in Echtzeit aufgenommen
 
 Kamera und Mikrofon werden beim PRESS START zusammen freigegeben.
@@ -61,7 +62,7 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 
 ## Videos
 
-Beide Videos (LOOP und TALK) bekommen einen Rahmen im STARSHOT-Stil: Verlauf mit Punkten, großes BOBBLECAM-Logo mit Sternen, das Bild mit schwarzem Rand und ボブルカム-Schild, unten eine Tafel mit Titel (BOBBLE LOOP! / TALK BOBBLE!), Info-Zeile (BEFORE <> AFTER bzw. Pitch) und Datum. Format 1080×1700. (STARSHOT-Rahmen, `js/frame.js`)
+Beide Videos (LOOP und TALK) und das JPG (BOBBLE SHOT!) bekommen einen Rahmen im STARSHOT-Stil, und die LOOP- und TALK-Seite zeigen das Bild schon mit diesem Rahmen: Verlauf mit Punkten, großes BOBBLECAM-Logo mit Sternen, das Bild mit schwarzem Rand und ボブルカム-Schild, unten eine Tafel mit Titel (BOBBLE LOOP! / TALK BOBBLE!), Info-Zeile (BEFORE <> AFTER bzw. Pitch) und Datum. Format 1080×1700. (STARSHOT-Rahmen, `js/frame.js`)
 
 Geht die App in den Hintergrund (Teilen-Menü, App-Wechsel), pausiert jeder Ton und läuft danach weiter.
 
@@ -79,7 +80,9 @@ Knöpfe, Regler, Rahmen, Pegel und Pitch-Rad sind im 8-Bit-Arcade-Stil (eckige P
 |---|---|
 | `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |
 | `js/export.js` | Video-Aufnahme für LOOP |
-| `js/mouth.js` + `js/worklets.js` | TALK: Mikrofon-Pegel, Aufnahme, Pitch-Shifter, Video mit Ton |
+| `js/mouth.js` + `js/worklets.js` | TALK: Mikrofon-Pegel, Aufnahme, Wiedergabe, Video mit Ton |
+| `js/dsp.js` | Lautstärke angleichen, Wackel-Hüllkurve, Pitch-Shifter (WSOLA) |
+| `js/frame.js` | Der STARSHOT-Rahmen um Videos und JPG |
 | `js/pixel-icons.js` | 8-Bit-Symbole der Knöpfe (9×9 Pixel, als Text-Raster zum Selbermalen) |
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
 | `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |

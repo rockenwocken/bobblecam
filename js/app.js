@@ -406,6 +406,17 @@ async function newPhoto(ask) {
 /** speed slider 0..100 → seconds per bobble, 4 s (slow) … 0.4 s (fast) */
 const period = () => 4 * Math.pow(0.1, Number(speedEl.value) / 100);
 
+// ---------- framed view (LOOP and TALK pages show the picture as it will be saved) ----------
+const framedCv = $('#framed');
+const fg = framedCv.getContext('2d');
+let viewFrame = null;
+function drawFramed() {
+  if (!viewFrame) return;
+  fg.setTransform(framedCv.width / FW, 0, 0, framedCv.height / FH, 0, 0);
+  viewFrame(fg, gooCv, isCut ? bgCv : null);
+}
+const talkInfo = () => (pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
+
 // ---------- pick screen: LOOP or TALK ----------
 const preview = $('#preview');
 const pv = preview.getContext('2d');
@@ -431,11 +442,10 @@ async function saveJpg() {
   if (state !== 'pick') return;
   sfx.click();
   const c = document.createElement('canvas');
-  c.width = W; c.height = H;
+  c.width = FW; c.height = FH;
   const g = c.getContext('2d');
   goo.render(1);
-  if (isCut) g.drawImage(bgCv, 0, 0); else { g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); }
-  g.drawImage(gooCv, 0, 0);
+  makeFrame('BOBBLE SHOT!', 'AFTER')(g, gooCv, isCut ? bgCv : null);
   const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.92));
   download({ blob, name: fileName('jpg') });
 }
@@ -455,6 +465,7 @@ function toAnim() {
   phase = 0;
   exportsCache = {};
   clearReady();
+  viewFrame = makeFrame('BOBBLE LOOP!', 'BEFORE <> AFTER');
   fit();
   showBanner({ text: 'BEFORE ⇄ AFTER!', tag: 'ビフォー・アフター！' }, 1800);
 }
@@ -497,7 +508,8 @@ async function build(kind) {
     } else if (kind === 'talk') {
       exporting = true;
       try {
-        talkFrame = makeFrame('TALK BOBBLE!', pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
+        clearTimeout(pitchTimer);
+        talkFrame = makeFrame('TALK BOBBLE!', talkInfo());
         const draw = (t) => { exportT = t; goo.render(talk.levelAt(take, t)); drawRec(); };
         const { blob, ext } = await talk.exportTake(take, pitch, recCv, draw, muted);
         out = { key, blob, name: fileName(ext) };
@@ -619,6 +631,8 @@ async function toTalk() {
   setMode('talk');
   clearTake();
   levels.fill(0);
+  viewFrame = makeFrame('TALK BOBBLE!', 'HOLD & SHOUT!');
+  fit();
   showBanner({ text: 'HOLD & SHOUT!', tag: 'さけんで！' }, 1800);
 }
 function leaveTalk() {
@@ -686,12 +700,18 @@ function setPitchTo(v) {
   v = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, Math.round(v)));
   if (v === pitch) return;
   pitch = v;
-  talk.setPitch(pitch);
   if (pitch === 0) sfx.blip(); else sfx.click();
   drawWheel();
   clearReady();
+  // the new pitch is computed once the wheel rests for a moment
+  clearTimeout(pitchTimer);
+  pitchTimer = setTimeout(() => {
+    talk.setPitch(pitch);
+    viewFrame = makeFrame('TALK BOBBLE!', talkInfo());
+  }, 140);
 }
 let wheelDrag = null;
+let pitchTimer = 0;
 let lastWheelTap = 0;
 wheelEl.addEventListener('pointerdown', (e) => {
   if (!take || busy) return;
@@ -746,6 +766,7 @@ function endTake(discard = false) {
   fit();
   drawWheel();
   talk.startPlayback(take, pitch, muted);
+  viewFrame = makeFrame('TALK BOBBLE!', talkInfo());
   showBanner({ text: 'PITCH IT!', tag: 'ピッチ！' }, 1600);
 }
 function clearTake() {
@@ -805,6 +826,7 @@ function loop(t) {
     if (!busy) phase = (phase + dt / period()) % 1;
     if (!busy) goo.render(bobble(phase));
   } else if (goo) goo.render();
+  if (state === 'anim' || state === 'talk') drawFramed();
   requestAnimationFrame(loop);
 }
 
@@ -814,8 +836,10 @@ function fit() {
   const pad = 40;
   const wheelW = state === 'talk' && take ? 84 : 0; // room for the pitch wheel
   const aw = r.width - pad - wheelW, ah = r.height - pad;
-  let w = aw, h = (aw * H) / W;
-  if (h > ah) { h = ah; w = (ah * W) / H; }
+  const framed = state === 'anim' || state === 'talk';
+  const RW = framed ? FW : W, RH = framed ? FH : H;
+  let w = aw, h = (aw * RH) / RW;
+  if (h > ah) { h = ah; w = (ah * RW) / RH; }
   screenEl.style.width = `${Math.floor(w)}px`;
   screenEl.style.height = `${Math.floor(h)}px`;
 }

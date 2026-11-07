@@ -670,3 +670,8 @@ button:disabled { opacity: .45; cursor: default; }
   pointer-events: none;
   image-rendering: auto;
 }
+
+/* LOOP and TALK show the framed picture (as it will be saved) */
+#screen #framed { display: none; pointer-events: none; }
+#app.mode-anim #screen #framed, #app.mode-talk #screen #framed { display: block; }
+#app.mode-anim #goo, #app.mode-talk #goo, #app.mode-anim #bg, #app.mode-talk #bg { visibility: hidden; }

@@ -1,3 +1,5 @@
+import { normalize, envelope, pitchShift } from './dsp.js';
+
 // TALK mode: the microphone drives the goo. Loud = full "after", quiet = "before".
 // A take keeps the raw sound plus a loudness envelope, so it can be replayed
 // with a different pitch while the picture flaps along exactly as recorded.
@@ -73,7 +75,10 @@ export function logLevel(l) {
 }
 export const takeTime = () => (tape ? ac.currentTime - tape.t0 : 0);
 
-/** returns { buf, env, dur } */
+/**
+ * Ends the take. The sound is loudness-normalised and the envelope that drives
+ * the goo is measured again from the normalised sound. Returns { buf, env, dur }.
+ */
 export function stopTake() {
   const t = tape;
   tape = null;
@@ -82,11 +87,14 @@ export function stopTake() {
   t.node.disconnect();
   t.mute.disconnect();
   const n = t.chunks.reduce((s, c) => s + c.length, 0);
-  const buf = ac.createBuffer(1, Math.max(1, n), ac.sampleRate);
-  const ch = buf.getChannelData(0);
+  const raw = new Float32Array(Math.max(1, n));
   let o = 0;
-  for (const c of t.chunks) { ch.set(c, o); o += c.length; }
-  return { buf, env: t.env, dur: buf.duration };
+  for (const c of t.chunks) { raw.set(c, o); o += c.length; }
+  const sr = ac.sampleRate;
+  const clean = normalize(raw, sr);
+  const buf = ac.createBuffer(1, clean.length, sr);
+  buf.getChannelData(0).set(clean);
+  return { buf, env: envelope(clean, sr), dur: buf.duration, pitched: new Map([[0, buf]]) };
 }
 
 /** loudness of a take at time t (s), interpolated */
@@ -105,29 +113,44 @@ export function levelAt(take, t) {
 }
 
 // ---------- playback with pitch ----------
-const ratioOf = (semis) => Math.pow(2, semis / 12);
 let play = null;
 
-/** loops the take through the pitch shifter; clock() gives the position in the take (s) */
-export function startPlayback(take, semis, muted) {
+/** the take at `semis` semitones (computed once per pitch, then kept) */
+function pitchedBuffer(take, semis) {
+  let b = take.pitched.get(semis);
+  if (!b) {
+    const sr = take.buf.sampleRate;
+    const y = pitchShift(take.buf.getChannelData(0), sr, semis);
+    b = ac.createBuffer(1, y.length, sr);
+    b.getChannelData(0).set(y);
+    take.pitched.set(semis, b);
+  }
+  return b;
+}
+
+/** loops the take; clock() gives the position in the take (s) */
+export function startPlayback(take, semis, muted, offset = 0) {
   stopPlayback();
   const src = ac.createBufferSource();
-  src.buffer = take.buf;
+  src.buffer = pitchedBuffer(take, semis);
   src.loop = true;
-  const ps = new AudioWorkletNode(ac, 'pitch-shifter');
-  ps.parameters.get('ratio').value = ratioOf(semis);
   const g = ac.createGain();
   g.gain.value = muted ? 0 : 1;
-  src.connect(ps).connect(g).connect(ac.destination);
-  const t0 = ac.currentTime + 0.02;
-  src.start(t0);
-  play = { src, ps, g, t0, dur: take.dur };
+  src.connect(g).connect(ac.destination);
+  const at = ac.currentTime + 0.02;
+  src.start(at, offset % take.dur);
+  play = { src, g, t0: at - (offset % take.dur), dur: take.dur, take, muted };
 }
+/** switches the running loop to another pitch, right where it is */
 export function setPitch(semis) {
-  if (play) play.ps.parameters.get('ratio').setValueAtTime(ratioOf(semis), ac.currentTime);
+  if (!play) return;
+  const pos = playClock();
+  startPlayback(play.take, semis, play.muted, Math.max(0, pos));
 }
 export function setPlaybackMuted(m) {
-  if (play) play.g.gain.setTargetAtTime(m ? 0 : 1, ac.currentTime, 0.02);
+  if (!play) return;
+  play.muted = m;
+  play.g.gain.setTargetAtTime(m ? 0 : 1, ac.currentTime, 0.02);
 }
 export function playClock() {
   if (!play) return -1;
@@ -138,7 +161,6 @@ export function stopPlayback() {
   if (!play) return;
   try { play.src.stop(); } catch (e) { /* not started */ }
   play.src.disconnect();
-  play.ps.disconnect();
   play.g.disconnect();
   play = null;
 }
@@ -167,14 +189,11 @@ export async function exportTake(take, semis, canvas, onFrame, muted) {
   stopPlayback();
   const dest = ac.createMediaStreamDestination();
   const src = ac.createBufferSource();
-  src.buffer = take.buf;
-  const ps = new AudioWorkletNode(ac, 'pitch-shifter');
-  ps.parameters.get('ratio').value = ratioOf(semis);
+  src.buffer = pitchedBuffer(take, semis);
   const g = ac.createGain();
   g.gain.value = muted ? 0 : 1;
-  src.connect(ps);
-  ps.connect(dest);
-  ps.connect(g).connect(ac.destination);
+  src.connect(dest);
+  src.connect(g).connect(ac.destination);
 
   onFrame(0);
   const vs = canvas.captureStream(30);
@@ -186,7 +205,7 @@ export async function exportTake(take, semis, canvas, onFrame, muted) {
   rec.start(250);
   const t0 = ac.currentTime + 0.05;
   src.start(t0);
-  const tail = 0.12; // let the shifter's short delay run out
+  const tail = 0.1;
   await new Promise((res) => {
     const step = () => {
       const t = ac.currentTime - t0;
@@ -198,7 +217,7 @@ export async function exportTake(take, semis, canvas, onFrame, muted) {
   rec.stop();
   await done;
   vs.getTracks().forEach((t) => t.stop());
-  src.disconnect(); ps.disconnect(); g.disconnect();
+  src.disconnect(); g.disconnect();
   return { blob: new Blob(chunks, { type: type.split(';')[0] }), ext: type.includes('mp4') ? 'mp4' : 'webm' };
 }
 
