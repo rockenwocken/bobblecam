@@ -167,6 +167,17 @@ const ICONS = {
     'XXX.X.XX.',
     '...X...X.',
   ],
+  film: [
+    'XXXXXXXXX',
+    'X.X.X.X.X',
+    'XXXXXXXXX',
+    'X.......X',
+    'X.......X',
+    'X.......X',
+    'XXXXXXXXX',
+    'X.X.X.X.X',
+    'XXXXXXXXX',
+  ],
   cut: [
     'X.......X',
     '.X.....X.',

@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072115';
-import { START_SOUNDS } from './start-sounds.js?v=202611072115';
-import { END_SOUNDS } from './end-sounds.js?v=202611072115';
-import { Goo } from './goo.js?v=202611072115';
-import { bobble, makeVideo } from './export.js?v=202611072115';
-import * as talk from './mouth.js?v=202611072115';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072115';
-import { makeFrame, FW, FH } from './frame.js?v=202611072115';
-import { paintBubbles } from './bubble-bg.js?v=202611072115';
-import * as words from './words.js?v=202611072115';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072115';
+import * as sfx from './sfx.js?v=202611072120';
+import { START_SOUNDS } from './start-sounds.js?v=202611072120';
+import { END_SOUNDS } from './end-sounds.js?v=202611072120';
+import { Goo } from './goo.js?v=202611072120';
+import { bobble, makeVideo, makeGif } from './export.js?v=202611072120';
+import * as talk from './mouth.js?v=202611072120';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072120';
+import { makeFrame, FW, FH } from './frame.js?v=202611072120';
+import { paintBubbles } from './bubble-bg.js?v=202611072120';
+import * as words from './words.js?v=202611072120';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072120';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -461,6 +461,7 @@ const preview = $('#preview');
 const pv = preview.getContext('2d');
 
 function toPick() {
+  if (typeof closeShareChoice === 'function') closeShareChoice();
   if (state === 'goo') {
     sfx.click();
     if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
@@ -544,6 +545,13 @@ async function build(kind) {
       };
       const { blob, ext } = await makeVideo(rec, draw, period());
       out = { key, blob, name: fileName(ext) };
+    } else if (kind === 'gif') {
+      const rec = document.createElement('canvas');
+      rec.width = FW; rec.height = FH;
+      const rg2 = rec.getContext('2d');
+      const frame = frameFor('loop');
+      const blob = await makeGif(rec, (ph) => { goo.render(bobble(ph)); frame(rg2, gooCv, isCut ? bgCv : null); }, period());
+      out = { key, blob, name: fileName('gif') };
     } else if (kind === 'talk') {
       exporting = true;
       try {
@@ -585,12 +593,13 @@ async function shareFile({ blob, name }, title, text) {
 
 function clearReady() {
   ready = null;
-  [btnVSave, btnVShare, $('#btn-tsave'), $('#btn-tshare')].forEach((b) => b.classList.remove('ready', 'busy'));
+  [btnVSave, btnVShare, $('#btn-share-video'), $('#btn-share-gif'), $('#btn-tsave'), $('#btn-tshare')].forEach((b) => b.classList.remove('ready', 'busy'));
 }
 
 const ACTIONS = {
   vsave: { btn: btnVSave, kind: 'video', run: (f) => download(f) },
-  vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM', shareText('loop')) },
+  vshare: { btn: $('#btn-share-video'), kind: 'video', run: (f) => { closeShareChoice(); return shareFile(f, 'BOBBLECAM', shareText('loop')); } },
+  gshare: { btn: $('#btn-share-gif'), kind: 'gif', run: (f) => { closeShareChoice(); return shareFile(f, 'BOBBLECAM', shareText('loop')); } },
   tsave: { btn: $('#btn-tsave'), kind: 'talk', run: (f) => download(f) },
   tshare: { btn: $('#btn-tshare'), kind: 'talk', run: (f) => shareFile(f, 'BOBBLECAM', shareText('talk')) },
 };
@@ -827,7 +836,19 @@ $('#btn-retake').addEventListener('click', () => { if (busy) return; sfx.click()
 $('#btn-tsave').addEventListener('click', () => act('tsave'));
 $('#btn-tshare').addEventListener('click', () => act('tshare'));
 btnVSave.addEventListener('click', () => act('vsave'));
-btnVShare.addEventListener('click', () => act('vshare'));
+// LOOP share: first choose VIDEO or GIF
+const animBar = $('#anim');
+function closeShareChoice() { animBar.classList.remove('choosing'); }
+btnVShare.addEventListener('click', () => {
+  if (busy) return;
+  sfx.initAudio();
+  sfx.blip();
+  clearReady();
+  animBar.classList.add('choosing');
+});
+$('#btn-vcancel').addEventListener('click', () => { if (busy) return; sfx.click(); clearReady(); closeShareChoice(); });
+$('#btn-share-video').addEventListener('click', () => act('vshare'));
+$('#btn-share-gif').addEventListener('click', () => act('gshare'));
 speedEl.addEventListener('input', () => { if (ready) clearReady(); });
 
 // ---------- frame loop ----------

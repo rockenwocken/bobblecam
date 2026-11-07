@@ -675,3 +675,8 @@ button:disabled { opacity: .45; cursor: default; }
 #screen #framed { display: none; pointer-events: none; }
 #app.mode-anim #screen #framed, #app.mode-talk #screen #framed { display: block; }
 #app.mode-anim #goo, #app.mode-talk #goo, #app.mode-anim #bg, #app.mode-talk #bg { visibility: hidden; }
+
+/* LOOP share: choose VIDEO or GIF */
+#anim .share-pick { display: none; }
+#anim.choosing .share-pick { display: flex; }
+#anim.choosing .anim-main { display: none; }

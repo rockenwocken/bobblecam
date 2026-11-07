@@ -8,8 +8,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-512.png">
-  <link rel="stylesheet" href="fonts.css?v=202611072115">
-  <link rel="stylesheet" href="style.css?v=202611072115">
+  <link rel="stylesheet" href="fonts.css?v=202611072120">
+  <link rel="stylesheet" href="style.css?v=202611072120">
 </head>
 <body>
   <div class="sunburst" aria-hidden="true"></div>
@@ -83,10 +83,15 @@
         <input id="speed" type="range" min="0" max="100" value="55" aria-label="Animation speed">
         <span class="speed-label">FAST</span>
       </label>
-      <div class="row">
+      <div class="row anim-main">
         <button id="btn-back" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>BACK</small></button>
         <button id="btn-vsave" class="pill hot" type="button"><i class="px" data-icon="save"></i><small>SAVE</small></button>
         <button id="btn-vshare" class="pill hot" type="button"><i class="px" data-icon="share"></i><small>SHARE</small></button>
+      </div>
+      <div class="row share-pick">
+        <button id="btn-vcancel" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>BACK</small></button>
+        <button id="btn-share-video" class="pill hot" type="button"><i class="px" data-icon="film"></i><small>VIDEO</small></button>
+        <button id="btn-share-gif" class="pill hot" type="button"><i class="px" data-icon="again"></i><small>GIF</small></button>
       </div>
     </footer>
 
@@ -131,6 +136,6 @@
   </section>
 
   <video id="video" playsinline muted autoplay></video>
-  <script type="module" src="js/app.js?v=202611072115"></script>
+  <script type="module" src="js/app.js?v=202611072120"></script>
 </body>
 </html>

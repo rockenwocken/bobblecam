@@ -3,7 +3,7 @@
 old cached files with new ones. Run after every change:  python3 bump-version.py"""
 import re, glob, time
 v = time.strftime('%Y%m%d%H%M')
-pat = re.compile(r"""((?:\./|js/)[\w-]+\.(?:js|css))(?:\?v=\w+)?(['"])""")
+pat = re.compile(r"""((?:\./|js/)[\w/-]+\.(?:js|css))(?:\?v=\w+)?(['"])""")
 for f in ['index.html'] + glob.glob('js/*.js'):
     s = open(f).read()
     n = pat.sub(lambda m: f"{m.group(1)}?v={v}{m.group(2)}", s)
