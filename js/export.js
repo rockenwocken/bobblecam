@@ -1,5 +1,5 @@
 // Turns the before/after bobble into a video for the gallery, or into a looping GIF.
-import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072120';
+import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072130';
 
 /** 0 → 1 → 0 over one period, soft at both ends */
 export const bobble = (phase) => 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
@@ -7,23 +7,55 @@ export const bobble = (phase) => 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- video ----------
-export function videoType() {
+export function videoType(withAudio = false) {
   if (!window.MediaRecorder) return null;
-  for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) {
-    if (MediaRecorder.isTypeSupported(t)) return t;
-  }
+  const list = withAudio
+    ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/mp4',
+      'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+    : ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (const t of list) if (MediaRecorder.isTypeSupported(t)) return t;
   return null;
 }
 
+// the background music for LOOP videos, decoded once
+let ac = null;
+const songs = new Map();
+async function song(url) {
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === 'suspended') await ac.resume();
+  if (!songs.has(url)) {
+    songs.set(url, fetch(url).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej))));
+  }
+  return songs.get(url);
+}
+export function suspendMusic() { if (ac && ac.state === 'running') ac.suspend(); }
+export function resumeMusic() { if (ac && ac.state === 'suspended') ac.resume(); }
+
 /**
  * Records the animation in real time. draw(phase) must render one frame onto `canvas`.
- * Resolves to { blob, ext }.
+ * music: optional URL of a song that plays from the start and fades out at the end
+ * (also out loud, unless muted). Resolves to { blob, ext }.
  */
-export async function makeVideo(canvas, draw, period, minSeconds = 3) {
-  const type = videoType();
+export async function makeVideo(canvas, draw, period, minSeconds = 3, music = null, muted = false) {
+  let buf = null;
+  if (music) { try { buf = await song(music); } catch (e) { console.warn('music not loaded', e); } }
+  const type = videoType(!!buf);
   if (!type) throw new Error('This browser cannot record video');
   const loops = Math.max(2, Math.ceil(minSeconds / period));
   const stream = canvas.captureStream(30);
+  const total = loops * period * 1000;
+  let src = null, gain = null;
+  if (buf) {
+    const dest = ac.createMediaStreamDestination();
+    src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    gain = ac.createGain();
+    src.connect(gain);
+    gain.connect(dest);
+    if (!muted) gain.connect(ac.destination);
+    dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+  }
   const rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 8_000_000 });
   const chunks = [];
   rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
@@ -31,7 +63,14 @@ export async function makeVideo(canvas, draw, period, minSeconds = 3) {
 
   draw(0);
   rec.start();
-  const t0 = performance.now(), total = loops * period * 1000;
+  if (src) {
+    const a0 = ac.currentTime, end = a0 + total / 1000;
+    gain.gain.setValueAtTime(1, a0);
+    gain.gain.setValueAtTime(1, Math.max(a0, end - 0.6));
+    gain.gain.linearRampToValueAtTime(0, end); // fade out with the last bobble
+    src.start(a0);
+  }
+  const t0 = performance.now();
   await new Promise((res) => {
     const step = (t) => {
       const el = t - t0;
@@ -42,6 +81,7 @@ export async function makeVideo(canvas, draw, period, minSeconds = 3) {
   });
   rec.stop();
   await done;
+  if (src) { try { src.stop(); } catch (e) { /* done */ } src.disconnect(); gain.disconnect(); }
   stream.getTracks().forEach((t) => t.stop());
   const blob = new Blob(chunks, { type: type.split(';')[0] });
   return { blob, ext: type.includes('mp4') ? 'mp4' : 'webm' };

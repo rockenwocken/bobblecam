@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072120';
-import { START_SOUNDS } from './start-sounds.js?v=202611072120';
-import { END_SOUNDS } from './end-sounds.js?v=202611072120';
-import { Goo } from './goo.js?v=202611072120';
-import { bobble, makeVideo, makeGif } from './export.js?v=202611072120';
-import * as talk from './mouth.js?v=202611072120';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072120';
-import { makeFrame, FW, FH } from './frame.js?v=202611072120';
-import { paintBubbles } from './bubble-bg.js?v=202611072120';
-import * as words from './words.js?v=202611072120';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072120';
+import * as sfx from './sfx.js?v=202611072130';
+import { START_SOUNDS } from './start-sounds.js?v=202611072130';
+import { END_SOUNDS } from './end-sounds.js?v=202611072130';
+import { Goo } from './goo.js?v=202611072130';
+import { bobble, makeVideo, makeGif, suspendMusic, resumeMusic } from './export.js?v=202611072130';
+import * as talk from './mouth.js?v=202611072130';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072130';
+import { makeFrame, FW, FH } from './frame.js?v=202611072130';
+import { paintBubbles } from './bubble-bg.js?v=202611072130';
+import * as words from './words.js?v=202611072130';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072130';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -543,7 +543,7 @@ async function build(kind) {
         goo.render(bobble(ph % 1));
         frame(rg, gooCv, isCut ? bgCv : null);
       };
-      const { blob, ext } = await makeVideo(rec, draw, period());
+      const { blob, ext } = await makeVideo(rec, draw, period(), 3, 'assets/hollareiduljoeh.mp3', muted);
       out = { key, blob, name: fileName(ext) };
     } else if (kind === 'gif') {
       const rec = document.createElement('canvas');
@@ -907,7 +907,7 @@ function fit() {
 // ---------- pause all sound while the page is in the background ----------
 function syncAudioToFocus() {
   const away = document.hidden || !document.hasFocus();
-  if (away) { sfx.suspendAudio(); talk.suspendAudio(); } else { sfx.resumeAudio(); talk.resumeAudio(); }
+  if (away) { sfx.suspendAudio(); talk.suspendAudio(); suspendMusic(); } else { sfx.resumeAudio(); talk.resumeAudio(); resumeMusic(); }
 }
 document.addEventListener('visibilitychange', syncAudioToFocus);
 window.addEventListener('blur', syncAudioToFocus);
