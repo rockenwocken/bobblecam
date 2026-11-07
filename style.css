@@ -656,7 +656,9 @@ button:disabled { opacity: .45; cursor: default; }
 /* pick screen: tiles at the top, Holgi flexing underneath, title + buttons on top of him */
 #app.mode-pick #stage { position: relative; z-index: 2; align-items: flex-start; }
 #app.mode-pick .pick { align-items: flex-start; padding-top: 26px; }
-#pickbar { position: relative; z-index: 2; }
+#pickbar { position: relative; z-index: 4; }
+/* tiles scale with the screen height, so the layout looks like on the phone on wide screens too */
+#app.mode-pick .tile { max-width: min(300px, 22vh); }
 .holgi {
   position: fixed;
   left: 50%;
@@ -664,7 +666,7 @@ button:disabled { opacity: .45; cursor: default; }
   height: min(56vh, 140vw);
   width: auto;
   transform: translateX(-50%);
-  z-index: 1;
+  z-index: 3; /* in front of the tiles (taps still go through), behind title + buttons */
   pointer-events: none;
   image-rendering: auto;
 }
