@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-512.png">
   <link rel="stylesheet" href="fonts.css">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
   <div class="sunburst" aria-hidden="true"></div>
@@ -35,7 +35,11 @@
           <div id="count" class="count hidden"></div>
           <div id="flash"></div>
         </div>
-        <video id="take" playsinline loop></video>
+      </div>
+      <div id="wheel" class="wheel" role="slider" aria-label="Pitch" aria-valuemin="-24" aria-valuemax="24">
+        <span class="wheel-label">PITCH</span>
+        <canvas id="wheel-cv" width="14" height="60"></canvas>
+        <span id="wheel-val" class="wheel-val">0</span>
       </div>
       <div id="pick" class="pick pick-only">
         <button id="pick-loop" class="tile" type="button">
@@ -50,25 +54,25 @@
     </main>
 
     <footer id="controls" class="cam-only">
-      <button id="btn-cut" class="pill" type="button" aria-label="Remove background">✂<small>BG ON</small></button>
-      <button id="btn-flip" class="pill" type="button" aria-label="Switch camera">⇄<small>CAM</small></button>
+      <button id="btn-cut" class="pill" type="button" aria-label="Remove background"><i class="px" data-icon="cut"></i><small>BG ON</small></button>
+      <button id="btn-flip" class="pill" type="button" aria-label="Switch camera"><i class="px" data-icon="flip"></i><small>CAM</small></button>
       <button id="btn-shoot" class="shoot" type="button" aria-label="Shoot"><span>SHOT!</span></button>
-      <button id="btn-mute" class="pill" type="button" aria-label="Sound on/off">♪<small>ON</small></button>
+      <button id="btn-mute" class="pill" type="button" aria-label="Sound on/off"><i id="mute-icon" class="px" data-icon="note"></i><small>ON</small></button>
     </footer>
 
     <footer id="editor" class="goo-only">
       <div class="row tools" role="radiogroup" aria-label="Goo tool">
-        <button class="pill tool on" data-tool="smear" type="button">〰<small>SMEAR</small></button>
-        <button class="pill tool" data-tool="grow" type="button">⊕<small>GROW</small></button>
-        <button class="pill tool" data-tool="shrink" type="button">⊖<small>SHRINK</small></button>
-        <button class="pill tool" data-tool="swirl" type="button"><b id="swirl-icon">↻</b><small>SWIRL</small></button>
-        <button class="pill tool" data-tool="ungoo" type="button">✧<small>UNGOO</small></button>
+        <button class="pill tool on" data-tool="smear" type="button"><i class="px" data-icon="smear"></i><small>SMEAR</small></button>
+        <button class="pill tool" data-tool="grow" type="button"><i class="px" data-icon="grow"></i><small>GROW</small></button>
+        <button class="pill tool" data-tool="shrink" type="button"><i class="px" data-icon="shrink"></i><small>SHRINK</small></button>
+        <button class="pill tool" data-tool="swirl" type="button"><i id="swirl-icon" class="px" data-icon="swirl"></i><small>SWIRL</small></button>
+        <button class="pill tool" data-tool="ungoo" type="button"><i class="px" data-icon="ungoo"></i><small>UNGOO</small></button>
       </div>
       <div class="row">
-        <button id="btn-undo" class="pill alt" type="button">↶<small>UNDO</small></button>
-        <button id="btn-size" class="pill alt" type="button"><b id="size-dot">●</b><small>SIZE M</small></button>
-        <button id="btn-again" class="pill alt" type="button">◉<small>NEW</small></button>
-        <button id="btn-next" class="pill hot" type="button">➜<small>NEXT</small></button>
+        <button id="btn-undo" class="pill alt" type="button"><i class="px" data-icon="undo"></i><small>UNDO</small></button>
+        <button id="btn-size" class="pill alt" type="button"><i id="size-dot" class="px" data-icon="size"></i><small>SIZE M</small></button>
+        <button id="btn-again" class="pill alt" type="button"><i class="px" data-icon="camera"></i><small>NEW</small></button>
+        <button id="btn-next" class="pill hot" type="button"><i class="px" data-icon="next"></i><small>NEXT</small></button>
       </div>
     </footer>
 
@@ -79,31 +83,31 @@
         <span class="speed-label">FAST</span>
       </label>
       <div class="row">
-        <button id="btn-back" class="pill alt" type="button">◀<small>BACK</small></button>
-        <button id="btn-vsave" class="pill hot" type="button">⬇<small>SAVE</small></button>
-        <button id="btn-vshare" class="pill hot" type="button">✦<small>SHARE</small></button>
+        <button id="btn-back" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>BACK</small></button>
+        <button id="btn-vsave" class="pill hot" type="button"><i class="px" data-icon="save"></i><small>SAVE</small></button>
+        <button id="btn-vshare" class="pill hot" type="button"><i class="px" data-icon="share"></i><small>SHARE</small></button>
       </div>
     </footer>
 
     <footer id="pickbar" class="pick-only">
       <div class="pick-title">CHOOSE YOUR BOBBLE!</div>
       <div class="row">
-        <button id="btn-pback" class="pill alt" type="button">◀<small>EDIT</small></button>
+        <button id="btn-pback" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>EDIT</small></button>
       </div>
     </footer>
 
     <footer id="talk" class="talk-only">
-      <canvas id="wave" width="680" height="88" aria-hidden="true"></canvas>
+      <canvas id="wave" width="85" height="11" aria-hidden="true"></canvas>
       <div class="row no-take">
-        <button id="btn-tback" class="pill alt" type="button">◀<small>BACK</small></button>
+        <button id="btn-tback" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>BACK</small></button>
         <button id="btn-hold" class="shoot hold" type="button"><span>HOLD</span><small id="hold-time">10s</small></button>
         <span class="pill-spacer" aria-hidden="true"></span>
       </div>
       <div class="row with-take">
-        <button id="btn-tback2" class="pill alt" type="button">◀<small>BACK</small></button>
-        <button id="btn-tsave" class="pill hot" type="button">⬇<small>SAVE</small></button>
-        <button id="btn-tshare" class="pill hot" type="button">✦<small>SHARE</small></button>
-        <button id="btn-retake" class="pill alt" type="button">↺<small>AGAIN</small></button>
+        <button id="btn-tback2" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>BACK</small></button>
+        <button id="btn-tsave" class="pill hot" type="button"><i class="px" data-icon="save"></i><small>SAVE</small></button>
+        <button id="btn-tshare" class="pill hot" type="button"><i class="px" data-icon="share"></i><small>SHARE</small></button>
+        <button id="btn-retake" class="pill alt" type="button"><i class="px" data-icon="again"></i><small>AGAIN</small></button>
       </div>
     </footer>
 
@@ -124,6 +128,6 @@
   </section>
 
   <video id="video" playsinline muted autoplay></video>
-  <script type="module" src="js/app.js?v=11"></script>
+  <script type="module" src="js/app.js?v=13"></script>
 </body>
 </html>

@@ -3,7 +3,8 @@ import { START_SOUNDS } from './start-sounds.js';
 import { END_SOUNDS } from './end-sounds.js';
 import { Goo } from './goo.js';
 import { bobble, makeVideo } from './export.js';
-import { openMic, closeMic, readLevel, startRecording } from './mouth.js';
+import * as talk from './mouth.js';
+import { initIcons, pxIcon } from './pixel-icons.js';
 import { prepare as prepareCut, cutout } from './cutout.js';
 
 // ---------- config ----------
@@ -283,7 +284,7 @@ function setTool(t) {
   document.querySelectorAll('.tool').forEach((b) => b.classList.toggle('on', b.dataset.tool === t));
   const sb = $('[data-tool=swirl]');
   sb.classList.toggle('ccw', swirlDir < 0);
-  $('#swirl-icon').textContent = swirlDir > 0 ? '↻' : '↺';
+  pxIcon($('#swirl-icon'), swirlDir > 0 ? 'swirl' : 'swirlccw');
 }
 function setSizeMode(on) {
   sizeMode = on;
@@ -294,7 +295,7 @@ function setSizeMode(on) {
 function updateUndo() { btnUndo.disabled = !goo.canUndo; }
 function updateSize() {
   btnSize.querySelector('small').textContent = sizeMode ? 'DRAG!' : 'SIZE';
-  $('#size-dot').style.fontSize = `${8 + ((brushR - R_MIN) / (R_MAX - R_MIN)) * 26}px`;
+  $('#size-dot').style.transform = `scale(${0.55 + ((brushR - R_MIN) / (R_MAX - R_MIN)) * 0.75})`;
 }
 
 function toImage(e) {
@@ -459,7 +460,7 @@ function fileName(ext) {
 
 /** makes (or reuses) the video for the current speed */
 async function build(kind) {
-  const key = speedEl.value;
+  const key = kind === 'talk' ? String(pitch) : speedEl.value;
   const c = exportsCache[kind];
   if (c && c.key === key) return c;
   busy = true;
@@ -476,6 +477,16 @@ async function build(kind) {
       };
       const { blob, ext } = await makeVideo(rec, draw, period());
       out = { key, blob, name: fileName(ext) };
+    } else if (kind === 'talk') {
+      exporting = true;
+      try {
+        const draw = (t) => { exportT = t; goo.render(talk.levelAt(take, t)); drawRec(); };
+        const { blob, ext } = await talk.exportTake(take, pitch, recCv, draw, muted);
+        out = { key, blob, name: fileName(ext) };
+      } finally {
+        exporting = false;
+        if (state === 'talk' && take) talk.startPlayback(take, pitch, muted);
+      }
     }
     exportsCache[kind] = out;
     return out;
@@ -505,16 +516,19 @@ async function shareFile({ blob, name }, title) {
 
 function clearReady() {
   ready = null;
-  [btnVSave, btnVShare].forEach((b) => b.classList.remove('ready', 'busy'));
+  [btnVSave, btnVShare, $('#btn-tsave'), $('#btn-tshare')].forEach((b) => b.classList.remove('ready', 'busy'));
 }
 
 const ACTIONS = {
   vsave: { btn: btnVSave, kind: 'video', run: (f) => download(f) },
   vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM') },
+  tsave: { btn: $('#btn-tsave'), kind: 'talk', run: (f) => download(f) },
+  tshare: { btn: $('#btn-tshare'), kind: 'talk', run: (f) => shareFile(f, 'BOBBLECAM') },
 };
 
 async function act(name) {
-  if (state !== 'anim' || busy) return;
+  if ((state !== 'anim' && state !== 'talk') || busy) return;
+  if (state === 'talk' && !take) return;
   sfx.initAudio();
   const a = ACTIONS[name];
   // second tap on a ready button: the share sheet needs a fresh tap after a long wait
@@ -533,7 +547,7 @@ async function act(name) {
     return;
   }
   a.btn.classList.remove('busy');
-  if (Date.now() - t0 < 3500 || name === 'vsave') {
+  if (Date.now() - t0 < 3500 || name === 'vsave' || name === 'tsave') {
     hideBanner();
     return a.run(f);
   }
@@ -551,23 +565,32 @@ $('#btn-back').addEventListener('click', toPick);
 
 // ---------- talk screen: the mic drives the goo ----------
 const MAX_TAKE = 10; // seconds
+const PITCH_MAX = 24; // semitones each way
 const btnHold = $('#btn-hold');
 const holdTime = $('#hold-time');
-const takeVideo = $('#take');
 const wave = $('#wave');
 const wg = wave.getContext('2d');
+const wheelEl = $('#wheel');
+const wheelCv = $('#wheel-cv');
+const whg = wheelCv.getContext('2d');
+const wheelVal = $('#wheel-val');
 const recCv = document.createElement('canvas');
 recCv.width = W; recCv.height = H;
 const rg = recCv.getContext('2d');
-const levels = new Array(68).fill(0);
-let rec = null; // { stop, t0, timer }
-let take = null; // { blob, name, url }
+const COLS = 28;
+const levels = new Array(COLS).fill(0);
+let recording = null; // { timer }
+let take = null; // { buf, env, dur }
+let pitch = 0; // semitones
+let exporting = false;
+let exportT = 0;
+let lastCol = 0;
 
 async function toTalk() {
   if (state !== 'pick') return;
   sfx.click();
   try {
-    await openMic();
+    await talk.openMic();
   } catch (e) {
     showBanner({ text: 'NO MIC!', tag: 'マイクをゆるして！' }, 2500);
     return;
@@ -576,90 +599,154 @@ async function toTalk() {
   setMode('talk');
   clearTake();
   levels.fill(0);
-  fit();
   showBanner({ text: 'HOLD & SHOUT!', tag: 'さけんで！' }, 1800);
 }
 function leaveTalk() {
-  if (rec) stopTake(true);
+  if (recording) endTake(true);
   clearTake();
-  closeMic();
+  talk.closeMic();
 }
 
-function drawWave(l) {
-  levels.push(l);
-  levels.shift();
-  const w = wave.width, h = wave.height, n = levels.length, bw = w / n;
-  wg.clearRect(0, 0, w, h);
-  for (let i = 0; i < n; i++) {
-    const v = Math.max(0.04, levels[i]);
-    const bh = v * (h - 8);
-    const hot = rec && i > n - 1 - Math.ceil((performance.now() - rec.t0) / 1000 * 60);
-    wg.fillStyle = hot ? (v > 0.75 ? '#ffe600' : '#ff2e88') : (v > 0.75 ? '#ffe600' : '#00e5ff');
-    wg.fillRect(i * bw + 1, (h - bh) / 2, bw - 2, bh);
-  }
-}
 function drawRec() {
   if (isCut) rg.drawImage(bgCv, 0, 0); else rg.clearRect(0, 0, W, H);
   rg.drawImage(gooCv, 0, 0);
 }
 
-function startTake(e) {
-  if (state !== 'talk' || rec || take) return;
+// LED level meter: 28 columns × 5 segments, drawn at 1 canvas px = 1 "pixel"
+const SEG_ON = ['#3dff8b', '#3dff8b', '#3dff8b', '#ffe600', '#ff2e88'];
+const SEG_OFF = '#2c1647';
+function drawLeds(vals, playCol = -1) {
+  wg.fillStyle = '#120620';
+  wg.fillRect(0, 0, wave.width, wave.height);
+  for (let c = 0; c < COLS; c++) {
+    const lit = Math.round(Math.min(1, vals[c] * 1.15) * 5);
+    const dim = playCol >= 0 && c > playCol;
+    for (let k = 0; k < 5; k++) {
+      wg.fillStyle = k < lit ? SEG_ON[k] : SEG_OFF;
+      wg.globalAlpha = dim && k < lit ? 0.35 : 1;
+      wg.fillRect(1 + c * 3, wave.height - 2 - k * 2, 2, 1);
+    }
+    wg.globalAlpha = 1;
+    if (c === playCol) { wg.fillStyle = '#fffaf2'; wg.fillRect(1 + c * 3, 0, 2, 1); }
+  }
+}
+function takeCols() {
+  const out = [];
+  for (let c = 0; c < COLS; c++) {
+    let m = 0;
+    for (let k = 0; k < 4; k++) m = Math.max(m, talk.levelAt(take, ((c + k / 4) / COLS) * take.dur));
+    out.push(m);
+  }
+  return out;
+}
+
+// pitch wheel: 14×60 pixels, ridges roll with the value, the pink line marks it
+function drawWheel() {
+  const w = wheelCv.width, h = wheelCv.height;
+  const shade = ['#2c1647', '#4a2a73', '#6d45a3', '#8f6ac8', '#b39ae0', '#cdb9f0', '#cdb9f0', '#b39ae0', '#8f6ac8', '#6d45a3', '#4a2a73', '#2c1647'];
+  whg.fillStyle = '#120620';
+  whg.fillRect(0, 0, w, h);
+  const off = ((pitch * 2) % 4 + 4) % 4;
+  for (let y = 1; y < h - 1; y++) {
+    const ridge = (y + off) % 4 === 0;
+    for (let x = 0; x < 12; x++) {
+      whg.fillStyle = ridge ? '#1d0d33' : shade[x];
+      whg.fillRect(1 + x, y, 1, 1);
+    }
+  }
+  const mid = Math.floor(h / 2);
+  const my = Math.round(mid - (pitch / PITCH_MAX) * (mid - 4));
+  whg.fillStyle = pitch === 0 ? '#ffe600' : '#ff2e88';
+  whg.fillRect(1, my - 1, 12, 2);
+  whg.fillStyle = '#ffe600'; // centre notches on the frame
+  whg.fillRect(0, mid - 1, 1, 2);
+  whg.fillRect(w - 1, mid - 1, 1, 2);
+  wheelVal.textContent = pitch > 0 ? `+${pitch}` : String(pitch);
+}
+function setPitchTo(v) {
+  v = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, Math.round(v)));
+  if (v === pitch) return;
+  pitch = v;
+  talk.setPitch(pitch);
+  if (pitch === 0) sfx.blip(); else sfx.click();
+  drawWheel();
+  clearReady();
+}
+let wheelDrag = null;
+let lastWheelTap = 0;
+wheelEl.addEventListener('pointerdown', (e) => {
+  if (!take || busy) return;
+  e.preventDefault();
+  wheelEl.setPointerCapture(e.pointerId);
+  const now = performance.now();
+  if (now - lastWheelTap < 300) { setPitchTo(0); lastWheelTap = 0; return; } // double tap: back to 0
+  lastWheelTap = now;
+  wheelDrag = { id: e.pointerId, y: e.clientY, p: pitch };
+});
+wheelEl.addEventListener('pointermove', (e) => {
+  if (!wheelDrag || wheelDrag.id !== e.pointerId) return;
+  const r = wheelEl.getBoundingClientRect();
+  const perSemi = r.height / (PITCH_MAX * 1.4);
+  setPitchTo(wheelDrag.p + (wheelDrag.y - e.clientY) / perSemi); // drag up = higher
+});
+const endWheel = (e) => { if (wheelDrag && wheelDrag.id === e.pointerId) wheelDrag = null; };
+wheelEl.addEventListener('pointerup', endWheel);
+wheelEl.addEventListener('pointercancel', endWheel);
+
+function beginTake(e) {
+  if (state !== 'talk' || recording || take) return;
   e.preventDefault();
   try { btnHold.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
   sfx.initAudio();
-  drawRec();
-  let stop;
-  try { stop = startRecording(recCv); } catch (err) {
-    showBanner({ text: 'OOPS!', tag: String(err.message || err) }, 2500);
-    return;
-  }
   hideBanner();
-  rec = { stop, t0: performance.now() };
+  talk.startTake();
+  recording = {
+    timer: setInterval(() => {
+      const left = MAX_TAKE - talk.takeTime();
+      holdTime.textContent = `${Math.max(0, Math.ceil(left))}s`;
+      if (left <= 0) endTake();
+    }, 100),
+  };
   btnHold.classList.add('rec');
   btnHold.querySelector('span').textContent = 'REC';
-  rec.timer = setInterval(() => {
-    const left = MAX_TAKE - (performance.now() - rec.t0) / 1000;
-    holdTime.textContent = `${Math.max(0, Math.ceil(left))}s`;
-    if (left <= 0) stopTake();
-  }, 100);
 }
-async function stopTake(discard = false) {
-  if (!rec) return;
-  const r = rec;
-  rec = null;
-  clearInterval(r.timer);
+function endTake(discard = false) {
+  if (!recording) return;
+  clearInterval(recording.timer);
+  recording = null;
   btnHold.classList.remove('rec');
   btnHold.querySelector('span').textContent = 'HOLD';
   holdTime.textContent = `${MAX_TAKE}s`;
-  const short = performance.now() - r.t0 < 500;
-  const { blob, ext } = await r.stop();
-  if (discard || state !== 'talk') return;
-  if (short) { showBanner({ text: 'HOLD IT LONGER!', tag: 'ながおし！' }, 1600); return; }
-  take = { blob, name: fileName(ext), url: URL.createObjectURL(blob) };
-  takeVideo.src = take.url;
+  const t = talk.stopTake();
+  if (discard || state !== 'talk' || !t) return;
+  if (t.dur < 0.5) { showBanner({ text: 'HOLD IT LONGER!', tag: 'ながおし！' }, 1600); return; }
+  take = t;
+  pitch = 0;
+  exportsCache.talk = null;
   app.classList.add('has-take');
-  takeVideo.play().catch(() => {});
-  sfx.playEnd();
+  fit();
+  drawWheel();
+  talk.startPlayback(take, pitch, muted);
+  showBanner({ text: 'PITCH IT!', tag: 'ピッチ！' }, 1600);
 }
 function clearTake() {
-  takeVideo.pause();
-  takeVideo.removeAttribute('src');
-  takeVideo.load();
-  if (take) URL.revokeObjectURL(take.url);
+  talk.stopPlayback();
   take = null;
+  pitch = 0;
+  exportsCache.talk = null;
   app.classList.remove('has-take');
+  fit();
 }
 
-btnHold.addEventListener('pointerdown', startTake);
-btnHold.addEventListener('pointerup', () => stopTake());
-btnHold.addEventListener('pointercancel', () => stopTake());
+btnHold.addEventListener('pointerdown', beginTake);
+btnHold.addEventListener('pointerup', () => endTake());
+btnHold.addEventListener('pointercancel', () => endTake());
 btnHold.addEventListener('contextmenu', (e) => e.preventDefault());
 $('#btn-tback').addEventListener('click', toPick);
 $('#btn-tback2').addEventListener('click', toPick);
-$('#btn-retake').addEventListener('click', () => { sfx.click(); clearTake(); });
-$('#btn-tsave').addEventListener('click', () => { if (take) { sfx.click(); download(take); } });
-$('#btn-tshare').addEventListener('click', () => { if (take) { sfx.click(); shareFile(take, 'BOBBLECAM'); } });
+$('#btn-retake').addEventListener('click', () => { if (busy) return; sfx.click(); clearReady(); clearTake(); });
+$('#btn-tsave').addEventListener('click', () => act('tsave'));
+$('#btn-tshare').addEventListener('click', () => act('tshare'));
 btnVSave.addEventListener('click', () => act('vsave'));
 btnVShare.addEventListener('click', () => act('vshare'));
 speedEl.addEventListener('input', () => { if (ready) clearReady(); });
@@ -679,10 +766,21 @@ function loop(t) {
   if (state === 'pick') drawPreview();
   else if (state === 'talk') {
     if (!take) {
-      const l = readLevel();
+      const l = talk.readLevel();
       goo.render(l);
-      drawWave(l);
-      if (rec) drawRec();
+      if (recording) talk.logLevel(l);
+      levels.push(l);
+      levels.shift();
+      drawLeds(levels);
+    } else {
+      const t = exporting ? exportT : talk.playClock();
+      if (!exporting && t >= 0) goo.render(talk.levelAt(take, t));
+      const col = Math.min(COLS - 1, Math.floor((Math.max(0, t) / take.dur) * COLS));
+      if (col !== lastCol || !take.cols) {
+        take.cols = take.cols || takeCols();
+        lastCol = col;
+        drawLeds(take.cols, col);
+      }
     }
   } else if (state === 'anim') {
     if (!busy) phase = (phase + dt / period()) % 1;
@@ -695,7 +793,8 @@ function loop(t) {
 function fit() {
   const r = stage.getBoundingClientRect();
   const pad = 40;
-  const aw = r.width - pad, ah = r.height - pad;
+  const wheelW = state === 'talk' && take ? 84 : 0; // room for the pitch wheel
+  const aw = r.width - pad - wheelW, ah = r.height - pad;
   let w = aw, h = (aw * H) / W;
   if (h > ah) { h = ah; w = (ah * W) / H; }
   screenEl.style.width = `${Math.floor(w)}px`;
@@ -754,7 +853,9 @@ btnFlip.addEventListener('click', async () => {
 btnMute.addEventListener('click', () => {
   muted = !muted;
   sfx.setMuted(muted);
+  talk.setPlaybackMuted(muted);
   btnMute.classList.toggle('off', muted);
+  pxIcon($('#mute-icon'), muted ? 'mute' : 'note');
   btnMute.querySelector('small').textContent = muted ? 'OFF' : 'ON';
   if (!muted) sfx.click();
 });
@@ -782,6 +883,7 @@ window.addEventListener('resize', fit);
       document.fonts.load('28px "Press Start 2P"'),
     ]);
   } catch (e) { /* fonts optional */ }
+  initIcons();
   updateSize();
   updateCut();
   paintBackdrop();

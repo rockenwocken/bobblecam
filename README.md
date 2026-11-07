@@ -34,9 +34,11 @@ Nach **➜ NEXT** stehen zwei umrandete Kacheln zur Wahl, ◀ EDIT geht zurück 
 - **SAVE** speichert die Animation als Video (MP4, sonst WebM), mind. 3 Sekunden
 - **SHARE** schickt das Video übers Teilen-Menü (blinkt der Knopf pink, nochmal tippen)
 
-**TALK** (Kachel mit dem Mund): Das Mikrofon steuert das Bild. Still = Vorher, je lauter, desto mehr Goo, zappelig wie ein sprechender Mund. Der Pegel läuft als Wellenform unter dem Bild mit.
+**TALK** (Kachel mit dem Mund): Das Mikrofon steuert das Bild. Still = Vorher, je lauter, desto mehr Goo, zappelig wie ein sprechender Mund. Der Pegel läuft als LED-Anzeige unter dem Bild mit.
 - **HOLD** gedrückt halten = Aufnahme (max. 10 s, Restzeit im Knopf), loslassen = fertig
-- danach läuft die Aufnahme in Schleife mit Ton: **SAVE** (Video mit Ton), **SHARE**, **AGAIN** (neu aufnehmen)
+- danach läuft die Aufnahme in Schleife, das Bild wackelt genau wie aufgenommen
+- **PITCH-Rad** rechts neben dem Bild: nach oben ziehen = höher, nach unten = tiefer, bis zu 2 Oktaven (±24 Halbtöne) in jede Richtung, die Länge bleibt gleich. Das Rad bleibt stehen, wo man es loslässt, Doppeltipp = zurück auf 0
+- **SAVE** (Video mit dem gepitchten Ton), **SHARE**, **AGAIN** (neu aufnehmen). Das Video wird dafür einmal in Echtzeit aufgenommen
 
 Kamera und Mikrofon werden beim PRESS START zusammen freigegeben.
 
@@ -57,13 +59,18 @@ Auf dem Handy in Chrome öffnen → Menü → *Zum Startbildschirm hinzufügen* 
 
 Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8000` öffnen.
 
+## Look
+
+Knöpfe, Regler, Rahmen, Pegel und Pitch-Rad sind im 8-Bit-Arcade-Stil (eckige Pixel, harte Schatten, flache Farben). Logo, Banner und Countdown bleiben bewusst im Cartoon-Stil als Kontrast.
+
 ## Anpassen
 
 | Datei | Inhalt |
 |---|---|
 | `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |
 | `js/export.js` | Video-Aufnahme für LOOP |
-| `js/mouth.js` | TALK: Mikrofon-Pegel und Video mit Ton |
+| `js/mouth.js` + `js/worklets.js` | TALK: Mikrofon-Pegel, Aufnahme, Pitch-Shifter, Video mit Ton |
+| `js/pixel-icons.js` | 8-Bit-Symbole der Knöpfe (9×9 Pixel, als Text-Raster zum Selbermalen) |
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
 | `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
 | `js/sfx.js` | Alle Geräusche, Goo-Sounds ganz unten (`squish`, `gooHold`) |

@@ -499,3 +499,156 @@ button:disabled { opacity: .45; cursor: default; }
 .shoot.hold.rec { background: #ff1744; animation: recPulse .5s ease-in-out infinite alternate; }
 @keyframes recPulse { to { transform: scale(1.08); } }
 .pill-spacer { width: 60px; }
+
+/* =====================================================================
+   8-BIT ARCADE SKIN — square pixels, notched corners, hard shadows,
+   flat colours. (Logo, banners and countdown stay cartoony on purpose.)
+   ===================================================================== */
+:root {
+  --px: 4px;
+  --px-outline: 0 calc(-1 * var(--px)) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+                calc(-1 * var(--px)) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink);
+  --px-bevel: inset var(--px) var(--px) 0 0 rgba(255, 255, 255, .55), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 rgba(0, 0, 0, .22);
+  --px-bevel-in: inset var(--px) var(--px) 0 0 rgba(0, 0, 0, .25), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 0 rgba(255, 255, 255, .3);
+}
+
+/* buttons */
+.pill,
+#editor .pill, #anim .pill, #pickbar .pill, #talk .pill {
+  border-radius: 0;
+  box-shadow: var(--px-outline), 0 calc(3 * var(--px)) 0 0 var(--ink), var(--px-bevel);
+  transition: none;
+  image-rendering: pixelated;
+}
+.pill:active:not(:disabled),
+.pill.tool.on, .pill.tool.on.ccw {
+  transform: translateY(calc(2 * var(--px)));
+  box-shadow: var(--px-outline), 0 var(--px) 0 0 var(--ink), var(--px-bevel-in);
+}
+.pill.tool.on { text-shadow: none; }
+.pill.tool.on small { text-shadow: none; }
+.pill i.px { display: block; width: 27px; height: 27px; line-height: 0; }
+.pill i.px svg { display: block; }
+#editor .pill i.px, #anim .pill i.px, #pickbar .pill i.px, #talk .pill i.px { width: 22px; height: 22px; }
+#editor .pill i.px svg, #anim .pill i.px svg, #pickbar .pill i.px svg, #talk .pill i.px svg { width: 22px; height: 22px; }
+#size-dot { transform-origin: center; }
+.pill.armed, .pill.busy, .pill.ready { animation-timing-function: steps(1, end); }
+.pill small { letter-spacing: 0; }
+
+/* the big round arcade buttons, drawn as pixel art */
+.shoot, .shoot.hold {
+  border-radius: 0;
+  background: url(assets/px-button.svg) center top / 100% 100% no-repeat;
+  box-shadow: none;
+  width: 104px;
+  height: 116px;
+  padding-bottom: 12px;
+  image-rendering: pixelated;
+  transition: none;
+  animation: pxPulse 1s steps(1, end) infinite;
+}
+.shoot.hold { width: 92px; height: 103px; padding-bottom: 10px; }
+.shoot:active:not(:disabled), .shoot.hold.rec {
+  transform: none;
+  box-shadow: none;
+  background: transparent url(assets/px-button-down.svg) center top / 100% 100% no-repeat;
+  padding-top: 12px;
+  padding-bottom: 0;
+}
+.shoot.hold.rec { animation: pxRec .5s steps(1, end) infinite; }
+.shoot span { text-shadow: 2px 2px 0 var(--ink); }
+@keyframes pxPulse { 50% { filter: brightness(1.18) saturate(1.2); } }
+@keyframes pxRec { 50% { filter: brightness(1.45) saturate(1.4); } }
+
+/* picture frame: ink / pink / ink pixel rings with stepped corners */
+#screen {
+  border-radius: 0;
+  box-shadow:
+    var(--px-outline),
+    0 -8px 0 0 var(--pink), 0 8px 0 0 var(--pink), -8px 0 0 0 var(--pink), 8px 0 0 0 var(--pink),
+    -4px -4px 0 0 var(--pink), 4px -4px 0 0 var(--pink), -4px 4px 0 0 var(--pink), 4px 4px 0 0 var(--pink),
+    0 -12px 0 0 var(--ink), 0 12px 0 0 var(--ink), -12px 0 0 0 var(--ink), 12px 0 0 0 var(--ink),
+    -8px -8px 0 0 var(--ink), 8px -8px 0 0 var(--ink), -8px 8px 0 0 var(--ink), 8px 8px 0 0 var(--ink),
+    0 22px 0 0 var(--ink);
+}
+
+/* pick tiles */
+.tile {
+  border-radius: 0;
+  box-shadow:
+    var(--px-outline),
+    0 -8px 0 0 var(--yellow), 0 8px 0 0 var(--yellow), -8px 0 0 0 var(--yellow), 8px 0 0 0 var(--yellow),
+    -4px -4px 0 0 var(--yellow), 4px -4px 0 0 var(--yellow), -4px 4px 0 0 var(--yellow), 4px 4px 0 0 var(--yellow),
+    0 -12px 0 0 var(--ink), 0 12px 0 0 var(--ink), -12px 0 0 0 var(--ink), 12px 0 0 0 var(--ink),
+    -8px -8px 0 0 var(--ink), 8px -8px 0 0 var(--ink), -8px 8px 0 0 var(--ink), 8px 8px 0 0 var(--ink),
+    0 22px 0 0 var(--ink);
+  animation: tileBob 1.2s steps(2, jump-none) infinite alternate;
+  transition: none;
+}
+.tile:active { transform: translateY(8px); }
+@keyframes tileBob { to { transform: translateY(-8px); } }
+.tile-label { border-radius: 0; transform: translateX(-50%); box-shadow: var(--px-outline), 0 8px 0 0 var(--ink); }
+.tile canvas { image-rendering: pixelated; }
+
+/* speed slider: segmented track, square thumb */
+#speed {
+  height: 16px;
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 12px, #0aa8bd 12px 16px);
+  box-shadow: var(--px-outline);
+}
+#speed::-webkit-slider-thumb {
+  width: 28px;
+  height: 32px;
+  border-radius: 0;
+  background: var(--yellow);
+  box-shadow: var(--px-outline), 0 8px 0 0 var(--ink), var(--px-bevel);
+}
+#speed::-moz-range-thumb { width: 24px; height: 28px; border-radius: 0; background: var(--yellow); border: 4px solid var(--ink); }
+.speed-label { font-family: 'Press Start 2P', monospace; }
+
+/* LED level meter */
+#wave {
+  border-radius: 0;
+  image-rendering: pixelated;
+  box-shadow: var(--px-outline), 0 8px 0 0 var(--ink);
+}
+
+/* pitch wheel, right of the picture (only once there is a take) */
+.wheel {
+  display: none;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-left: 26px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ns-resize;
+}
+#app.mode-talk.has-take .wheel { display: flex; }
+.wheel canvas {
+  width: 56px;
+  height: 240px;
+  image-rendering: pixelated;
+  box-shadow: var(--px-outline), 0 8px 0 0 var(--ink);
+}
+.wheel-label, .wheel-val {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--yellow);
+  text-shadow: 2px 2px 0 var(--ink);
+}
+.wheel-val { font-size: 12px; color: var(--white); min-width: 4ch; text-align: center; }
+@media (max-height: 760px) { .wheel canvas { height: 180px; } }
+
+/* title screen bits */
+.start {
+  border-radius: 0;
+  box-shadow: var(--px-outline), 0 calc(3 * var(--px)) 0 0 var(--ink), var(--px-bevel);
+  animation: pxBob 1s steps(1, end) infinite;
+}
+.start:active { transform: translateY(8px); box-shadow: var(--px-outline), 0 var(--px) 0 0 var(--ink), var(--px-bevel-in); animation: none; }
+@keyframes pxBob { 50% { transform: translateY(-8px); } }
+.error { border-radius: 0; box-shadow: var(--px-outline); }
