@@ -233,10 +233,10 @@ async function shoot() {
   await wait(Math.min(vd, VOICE_WAIT) * 1000);
 
   hideBanner();
-  girlUp();
   sfx.beat(4, COUNT_STEP / 1000);
   const dark = isDark(); // check the light while the scene is still unlit
   for (const n of [3, 2, 1]) {
+    if (n === 1) girlUp(); // she pops up right after the 2
     showCount(String(n));
     sfx.beep(false);
     await wait(COUNT_STEP);
