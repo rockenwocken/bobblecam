@@ -10,7 +10,7 @@ Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/roc
 
 Der **✂**-Knopf neben dem Auslöser schaltet um zwischen **NO BG** (pink, Hintergrund wird nach dem Foto entfernt) und **BG ON** (Foto bleibt wie es ist). Die Einstellung wird gemerkt.
 
-Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Handy (Modell liegt in `assets/mediapipe/`). Hinter der freigestellten Person erscheint der Seifenblasen-Hintergrund `assets/bobblebg.jpg`, der auch im Video landet. Funktioniert am besten mit Gesicht und Oberkörper; findet es niemanden, bleibt das normale Foto.
+Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Handy (Modell liegt in `assets/mediapipe/`). Hinter der freigestellten Person erscheint der Seifenblasen-Hintergrund `assets/bobblebg.jpg` (selbst gemalt mit `tools/make-bubble-bg.py`, eine andere Zahl am Ende malt eine neue Variante), der auch im Video landet. Funktioniert am besten mit Gesicht und Oberkörper; findet es niemanden, bleibt das normale Foto.
 
 ## Der Goo-Editor
 
