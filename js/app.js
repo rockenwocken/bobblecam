@@ -1,13 +1,14 @@
-import * as sfx from './sfx.js?v=202611072100';
-import { START_SOUNDS } from './start-sounds.js?v=202611072100';
-import { END_SOUNDS } from './end-sounds.js?v=202611072100';
-import { Goo } from './goo.js?v=202611072100';
-import { bobble, makeVideo } from './export.js?v=202611072100';
-import * as talk from './mouth.js?v=202611072100';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072100';
-import { makeFrame, FW, FH } from './frame.js?v=202611072100';
-import * as words from './words.js?v=202611072100';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072100';
+import * as sfx from './sfx.js?v=202611072106';
+import { START_SOUNDS } from './start-sounds.js?v=202611072106';
+import { END_SOUNDS } from './end-sounds.js?v=202611072106';
+import { Goo } from './goo.js?v=202611072106';
+import { bobble, makeVideo } from './export.js?v=202611072106';
+import * as talk from './mouth.js?v=202611072106';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072106';
+import { makeFrame, FW, FH } from './frame.js?v=202611072106';
+import { paintBubbles } from './bubble-bg.js?v=202611072106';
+import * as words from './words.js?v=202611072106';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072106';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -124,18 +125,9 @@ function updateCut() {
   btnCut.querySelector('small').textContent = cutBg ? 'NO BG' : 'BG ON';
 }
 
-/** the backdrop behind a cut-out photo (also in the videos and the JPG): assets/bobblebg.jpg */
+/** the backdrop behind a cut-out photo (also in videos and JPG): freshly painted bubbles */
 function paintBackdrop() {
-  paintSunburst(); // until the picture has loaded
-  const img = new Image();
-  img.onload = () => {
-    const g = bgCv.getContext('2d');
-    const s = Math.max(W / img.width, H / img.height); // cover
-    const w = img.width * s, h = img.height * s;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
-  };
-  img.src = 'assets/bobblebg.jpg';
+  try { paintBubbles(bgCv); } catch (e) { console.warn('bubbles failed', e); paintSunburst(); }
 }
 
 /** fallback backdrop: arcade sunburst */
@@ -282,6 +274,7 @@ async function shoot() {
   goo.setImage(photo);
   goo.render();
   newPhotoTitle();
+  if (isCut) paintBackdrop(); // a new bubble backdrop for every photo
   state = 'goo';
   setMode('goo');
   sfx.playEnd(); // the photo is done: random end sound
