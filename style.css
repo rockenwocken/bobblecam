@@ -388,3 +388,9 @@ button:disabled { opacity: .45; cursor: default; }
 #speed { flex: 1; appearance: none; -webkit-appearance: none; height: 16px; border-radius: 8px; background: linear-gradient(90deg, var(--cyan), var(--pink)); box-shadow: 0 0 0 3px var(--ink); }
 #speed::-webkit-slider-thumb { -webkit-appearance: none; width: 34px; height: 34px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 0 4px var(--ink), 0 4px 0 4px var(--ink); }
 #speed::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: var(--yellow); border: 4px solid var(--ink); }
+
+/* background removal */
+#controls { gap: 14px; }
+#btn-cut.cutting { background: var(--pink); color: var(--white); text-shadow: 2px 2px 0 var(--ink); }
+#app:not(.cut) #bg, #app.mode-cam #bg { visibility: hidden; }
+@media (max-width: 380px) { #controls .pill { width: 60px; height: 60px; } #controls { gap: 10px; } }

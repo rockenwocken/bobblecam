@@ -72,6 +72,58 @@ function stickerFrame(ctx, src) {
   ctx.restore();
 }
 
+/** bounding box of everything visible in src at goo amounts 0 and 1 (for cut-out photos) */
+function visibleBox(src, render) {
+  const k = 4, w = Math.ceil(src.width / k), h = Math.ceil(src.height / k);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  let x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for (const a of [0, 0.5, 1]) {
+    render(a);
+    g.clearRect(0, 0, w, h);
+    g.drawImage(src, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h).data;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4 + 3] > 40) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 <= x0 || y1 <= y0) return { x: 0, y: 0, w: src.width, h: src.height };
+  return { x: x0 * k, y: y0 * k, w: (x1 - x0 + 1) * k, h: (y1 - y0 + 1) * k };
+}
+
+/** sticker look for a cut-out: just the person, with a thick white die-cut rim */
+function cutFrame(ctx, src, box, tmp) {
+  const pad = 22, rim = 10;
+  const s = Math.min((S - 2 * pad) / box.w, (S - 2 * pad) / box.h);
+  const w = box.w * s, h = box.h * s, x = (S - w) / 2, y = (S - h) / 2;
+  const tg = tmp.getContext('2d');
+  tg.clearRect(0, 0, S, S);
+  tg.drawImage(src, box.x, box.y, box.w, box.h, x, y, w, h);
+  ctx.clearRect(0, 0, S, S);
+  // white silhouette, stamped in a circle around the person = rim
+  const sil = document.createElement('canvas');
+  sil.width = sil.height = S;
+  const sg = sil.getContext('2d');
+  sg.drawImage(tmp, 0, 0);
+  sg.globalCompositeOperation = 'source-in';
+  sg.fillStyle = '#fff';
+  sg.fillRect(0, 0, S, S);
+  ctx.save();
+  ctx.shadowColor = 'rgba(18,6,32,.35)';
+  ctx.shadowBlur = 6;
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    ctx.drawImage(sil, Math.cos(a) * rim, Math.sin(a) * rim);
+  }
+  ctx.restore();
+  ctx.drawImage(sil, 0, 0);
+  ctx.drawImage(tmp, 0, 0);
+}
+
 /** splits a RIFF/WEBP file into its chunks */
 function chunks(buf) {
   const v = new DataView(buf), out = [];
@@ -125,7 +177,7 @@ function assemble(frames, ms) {
  * render(amt) must draw the goo at that amount onto src (a W×H canvas).
  * Picks frame count and quality so the sticker stays under WhatsApp's 500 KB.
  */
-export async function makeSticker(src, render, period) {
+export async function makeSticker(src, render, period, cut = false) {
   const cv = document.createElement('canvas');
   cv.width = cv.height = S;
   const ctx = cv.getContext('2d');
@@ -133,6 +185,9 @@ export async function makeSticker(src, render, period) {
   const test = await enc(0.8);
   if (!test || test.type !== 'image/webp') throw new Error('This browser cannot make WebP');
 
+  const box = cut ? visibleBox(src, render) : null;
+  const tmp = document.createElement('canvas');
+  tmp.width = tmp.height = S;
   const loopMs = Math.min(10000, Math.round(period * 1000));
   for (const [n, q] of [[20, 0.8], [16, 0.7], [14, 0.6], [12, 0.5], [10, 0.4], [8, 0.3]]) {
     const ms = Math.max(20, Math.round(loopMs / n));
@@ -140,7 +195,7 @@ export async function makeSticker(src, render, period) {
     let bytes = 0;
     for (let i = 0; i < n; i++) {
       render(bobble(i / n));
-      stickerFrame(ctx, src);
+      if (cut) cutFrame(ctx, src, box, tmp); else stickerFrame(ctx, src);
       const b = await enc(q);
       bytes += b.size;
       if (bytes > MAX_BYTES) break;

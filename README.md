@@ -2,7 +2,13 @@
 
 Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/rockenwocken/starshot): Foto machen, dann wie in *Kai's Power Goo* das Gesicht verschmieren, aufblasen, schrumpfen und verdrehen.
 
-**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage (dieselben wie bei STARSHOT) → Posen-Aufgabe → Countdown **3 · 2 · 1** → Foto → Goo-Editor.
+**Ablauf:** **PRESS START** → **SHOT!** → zufällige Start-Ansage (dieselben wie bei STARSHOT) → Posen-Aufgabe → schneller Countdown **3 · 2 · 1** → Foto → Hintergrund weg → Goo-Editor.
+
+## Hintergrund entfernen
+
+Der **✂**-Knopf neben dem Auslöser schaltet um zwischen **NO BG** (pink, Hintergrund wird nach dem Foto entfernt) und **BG ON** (Foto bleibt wie es ist). Die Einstellung wird gemerkt.
+
+Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Handy (Modell liegt in `assets/mediapipe/`). Hinter der freigestellten Person erscheint ein Arcade-Strahlenhintergrund, der auch im Video landet. Der Sticker wird ohne Hintergrund als Ausschnitt mit weißem Rand gebaut. Funktioniert am besten mit Gesicht und Oberkörper; findet es niemanden, bleibt das normale Foto.
 
 ## Der Goo-Editor
 
@@ -49,9 +55,10 @@ Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8
 
 | Datei | Inhalt |
 |---|---|
+| `js/cutout.js` + `assets/mediapipe/` | Hintergrund entfernen |
 | `js/export.js` | Video-Aufnahme und animierter WebP-Sticker |
 | `js/goo.js` | Goo-Engine: Verschiebungsfeld, Werkzeuge, WebGL-Rendering |
-| `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Posen (`POSES`) |
+| `js/app.js` | Ablauf, Pinselgrößen (`R_MIN`, `R_MAX`), Werkzeug-Stärke (`RATE`), Posen (`POSES`), Countdown-Tempo (`COUNT_STEP`, `VOICE_WAIT`) |
 | `js/sfx.js` | Alle Geräusche, Goo-Sounds ganz unten (`squish`, `gooHold`) |
 | `js/start-sounds.js` + `assets/start/` | Start-Ansagen (aus STARSHOT übernommen) |
 
@@ -67,5 +74,7 @@ Start-Ansagen von [Freesound.org](https://freesound.org) (gekürzt, lautstärke-
 - mt4000: ready let's go high (#664605)
 - rezidentevil: girl says uwu (#708541)
 - bing bam boom: aus Sound-Sammlungen im Netz, nur für private Nutzung
+
+Freisteller: [MediaPipe Selfie Segmentation](https://github.com/google/mediapipe) (Apache 2.0)
 
 Schriften (SIL Open Font License, über Fontsource): Dela Gothic One, DotGothic16, Press Start 2P

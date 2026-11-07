@@ -27,6 +27,7 @@
     <main id="stage">
       <div id="screen">
         <canvas id="cam" width="1080" height="1440"></canvas>
+        <canvas id="bg" width="1080" height="1440"></canvas>
         <canvas id="goo" width="1080" height="1440"></canvas>
         <div id="fx">
           <div id="ring" class="ring hidden"></div>
@@ -38,6 +39,7 @@
     </main>
 
     <footer id="controls" class="cam-only">
+      <button id="btn-cut" class="pill" type="button" aria-label="Remove background">✂<small>BG ON</small></button>
       <button id="btn-flip" class="pill" type="button" aria-label="Switch camera">⇄<small>CAM</small></button>
       <button id="btn-shoot" class="shoot" type="button" aria-label="Shoot"><span>SHOT!</span></button>
       <button id="btn-mute" class="pill" type="button" aria-label="Sound on/off">♪<small>ON</small></button>

@@ -2,10 +2,12 @@ import * as sfx from './sfx.js';
 import { START_SOUNDS } from './start-sounds.js';
 import { Goo } from './goo.js';
 import { bobble, makeVideo, makeSticker } from './export.js';
+import { prepare as prepareCut, cutout } from './cutout.js';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
-const COUNT_STEP = 1000; // ms per countdown number
+const COUNT_STEP = 450; // ms per countdown number
+const VOICE_WAIT = 1.3; // s of start voice before the countdown kicks in (the voice keeps playing)
 const R_MIN = 30, R_MAX = 520;
 const RATE = { grow: 1.1, shrink: 1.1, swirl: 2.6, ungoo: 3.5 }; // per second while held
 const POSES = [
@@ -36,6 +38,8 @@ const ring = $('#ring');
 const btnShoot = $('#btn-shoot');
 const btnFlip = $('#btn-flip');
 const btnMute = $('#btn-mute');
+const btnCut = $('#btn-cut');
+const bgCv = $('#bg');
 const btnUndo = $('#btn-undo');
 const btnSize = $('#btn-size');
 const btnAgain = $('#btn-again');
@@ -56,6 +60,9 @@ let swirlDir = 1; // 1 = clockwise, -1 = counter-clockwise
 let sizeMode = false;
 let phase = 0; // before/after animation
 let busy = false;
+let cutBg = true; // remove the background after the shot?
+let isCut = false; // is the current photo cut out?
+try { cutBg = localStorage.getItem('bobblecam.cut') !== '0'; } catch (e) { /* no storage */ }
 let ready = null; // { kind, blob, name } waiting for a second tap
 let exportsCache = {}; // kind → { key, blob, name }
 let pointer = null; // { id, x, y, stop?, travel }
@@ -125,11 +132,45 @@ function drawFrame() {
 }
 
 // ---------- flow ----------
+function setMode(m) { app.className = `mode-${m}${isCut ? ' cut' : ''}`; }
+
+function updateCut() {
+  btnCut.classList.toggle('cutting', cutBg);
+  btnCut.querySelector('small').textContent = cutBg ? 'NO BG' : 'BG ON';
+}
+
+/** the arcade backdrop shown behind a cut-out photo (and baked into the video) */
+function paintBackdrop() {
+  const g = bgCv.getContext('2d');
+  const cx = W / 2, cy = H * 0.42, R = Math.hypot(W, H);
+  g.fillStyle = '#3d1170';
+  g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 36; i += 2) {
+    const a0 = (i / 36) * Math.PI * 2, a1 = ((i + 1) / 36) * Math.PI * 2;
+    g.beginPath();
+    g.moveTo(cx, cy);
+    g.arc(cx, cy, R, a0, a1);
+    g.closePath();
+    g.fillStyle = '#ff2e88';
+    g.fill();
+  }
+  const glow = g.createRadialGradient(cx, cy, 0, cx, cy, W * 0.7);
+  glow.addColorStop(0, 'rgba(255,230,0,.85)');
+  glow.addColorStop(0.35, 'rgba(255,122,0,.35)');
+  glow.addColorStop(1, 'rgba(122,44,255,0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(255,255,255,.18)';
+  for (let y = 0; y < H; y += 36) for (let x = (y / 36) % 2 ? 18 : 0; x < W; x += 36) {
+    g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.fill();
+  }
+}
 function toCamera() {
   state = 'ready';
-  app.className = 'mode-cam';
+  setMode('cam');
   btnShoot.disabled = false;
   btnFlip.disabled = false;
+  btnCut.disabled = false;
   hideBanner();
   ring.classList.add('hidden');
   fit();
@@ -141,13 +182,14 @@ async function shoot() {
   state = 'running';
   btnShoot.disabled = true;
   btnFlip.disabled = true;
+  btnCut.disabled = true;
 
   showBanner({ text: 'GET READY!', tag: 'いくぞ！' });
   const vd = sfx.playVoice();
-  await wait(Math.min(vd, 3.2) * 1000 + 150);
+  await wait(Math.min(vd, VOICE_WAIT) * 1000);
 
   showBanner(pick(POSES));
-  sfx.beat(4, 0.5);
+  sfx.beat(4, COUNT_STEP / 1000);
   for (const n of [3, 2, 1]) {
     showCount(String(n));
     sfx.beep(false);
@@ -160,15 +202,30 @@ async function shoot() {
   flash();
   hideBanner();
 
-  goo.setImage(camCv);
-  goo.render();
   stopCamera();
+  let photo = camCv;
+  isCut = false;
+  if (cutBg) {
+    showBanner({ text: 'CUTTING OUT…', tag: 'チョキチョキ！' });
+    try {
+      const c = await cutout(camCv);
+      if (c.coverage > 0.02) { photo = c; isCut = true; }
+      else showBanner({ text: 'NOBODY FOUND!', tag: 'だれもいない？' }, 1800);
+    } catch (e) {
+      console.warn('cutout failed', e);
+      showBanner({ text: 'CUT FAILED!', tag: String(e.message || e) }, 2500);
+    }
+  }
+  goo.setImage(photo);
+  goo.render();
   state = 'goo';
-  app.className = 'mode-goo';
+  setMode('goo');
   updateUndo();
   fit();
-  await wait(500);
-  showBanner({ text: 'GOO TIME!', tag: 'ぐにゃぐにゃ！' }, 1600);
+  if (banner.classList.contains('hidden') || isCut) {
+    await wait(isCut ? 100 : 500);
+    showBanner({ text: 'GOO TIME!', tag: 'ぐにゃぐにゃ！' }, 1600);
+  }
 }
 
 // ---------- editor ----------
@@ -189,7 +246,7 @@ function setSizeMode(on) {
 }
 function updateUndo() { btnUndo.disabled = !goo.canUndo; }
 function updateSize() {
-  btnSize.querySelector('small').textContent = sizeMode ? 'DRAG!' : `SIZE ${Math.round(brushR)}`;
+  btnSize.querySelector('small').textContent = sizeMode ? 'DRAG!' : 'SIZE';
   $('#size-dot').style.fontSize = `${8 + ((brushR - R_MIN) / (R_MAX - R_MIN)) * 26}px`;
 }
 
@@ -304,7 +361,7 @@ function toAnim() {
   sfx.click();
   if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
   state = 'anim';
-  app.className = 'mode-anim';
+  setMode('anim');
   ring.classList.add('hidden');
   setSizeMode(false);
   phase = 0;
@@ -317,7 +374,7 @@ function backToGoo() {
   if (busy) return;
   sfx.click();
   state = 'goo';
-  app.className = 'mode-goo';
+  setMode('goo');
   clearReady();
   goo.render(1);
   fit();
@@ -338,10 +395,18 @@ async function build(kind) {
   try {
     let out;
     if (kind === 'video') {
-      const { blob, ext } = await makeVideo(gooCv, (ph) => goo.render(bobble(ph % 1)), period());
+      const rec = document.createElement('canvas');
+      rec.width = W; rec.height = H;
+      const rg = rec.getContext('2d');
+      const draw = (ph) => {
+        goo.render(bobble(ph % 1));
+        if (isCut) rg.drawImage(bgCv, 0, 0); else rg.clearRect(0, 0, W, H);
+        rg.drawImage(gooCv, 0, 0);
+      };
+      const { blob, ext } = await makeVideo(rec, draw, period());
       out = { key, blob, name: fileName(ext) };
     } else {
-      const blob = await makeSticker(gooCv, (a) => goo.render(a), period());
+      const blob = await makeSticker(gooCv, (a) => goo.render(a), period(), isCut);
       out = { key, blob, name: fileName('webp') };
     }
     exportsCache[kind] = out;
@@ -472,11 +537,22 @@ $('#btn-start').addEventListener('click', async () => {
     return;
   }
   sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
+  if (cutBg) prepareCut().catch((e) => console.warn('cutout not ready', e));
   $('#title').classList.add('hidden');
   toCamera();
 });
 
 btnShoot.addEventListener('click', shoot);
+btnCut.addEventListener('click', () => {
+  if (state !== 'ready') return;
+  sfx.initAudio();
+  sfx.blip();
+  cutBg = !cutBg;
+  try { localStorage.setItem('bobblecam.cut', cutBg ? '1' : '0'); } catch (e) { /* no storage */ }
+  updateCut();
+  if (cutBg) prepareCut().catch((e) => console.warn('cutout not ready', e));
+  showBanner(cutBg ? { text: 'BACKGROUND: BYE!', tag: 'バイバイ！' } : { text: 'BACKGROUND STAYS!', tag: 'そのまま！' }, 1400);
+});
 btnFlip.addEventListener('click', async () => {
   if (state !== 'ready') return;
   sfx.click();
@@ -515,6 +591,8 @@ window.addEventListener('resize', fit);
     ]);
   } catch (e) { /* fonts optional */ }
   updateSize();
+  updateCut();
+  paintBackdrop();
   fit();
   requestAnimationFrame(loop);
 })();
