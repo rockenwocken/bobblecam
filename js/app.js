@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072137';
-import { START_SOUNDS } from './start-sounds.js?v=202611072137';
-import { END_SOUNDS } from './end-sounds.js?v=202611072137';
-import { Goo } from './goo.js?v=202611072137';
-import { bobble, makeVideo, makeGif, suspendMusic, resumeMusic, startMusic, stopMusic } from './export.js?v=202611072137';
-import * as talk from './mouth.js?v=202611072137';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072137';
-import { makeFrame, FW, FH } from './frame.js?v=202611072137';
-import { paintBubbles } from './bubble-bg.js?v=202611072137';
-import * as words from './words.js?v=202611072137';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072137';
+import * as sfx from './sfx.js?v=202611072152';
+import { START_SOUNDS } from './start-sounds.js?v=202611072152';
+import { END_SOUNDS } from './end-sounds.js?v=202611072152';
+import { Goo } from './goo.js?v=202611072152';
+import { bobble, makeVideo, makeGif, suspendMusic, resumeMusic, startMusic, stopMusic } from './export.js?v=202611072152';
+import * as talk from './mouth.js?v=202611072152';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072152';
+import { makeFrame, FW, FH } from './frame.js?v=202611072152';
+import { paintBubbles } from './bubble-bg.js?v=202611072152';
+import * as words from './words.js?v=202611072152';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072152';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -32,7 +32,8 @@ const flashEl = $('#flash');
 const ring = $('#ring');
 const btnShoot = $('#btn-shoot');
 const btnFlip = $('#btn-flip');
-const btnMute = $('#btn-mute');
+const btnGallery = $('#btn-gallery');
+const galleryInput = $('#gallery-input');
 const btnCut = $('#btn-cut');
 const bgCv = $('#bg');
 const btnUndo = $('#btn-undo');
@@ -162,6 +163,7 @@ function toCamera() {
   btnShoot.disabled = false;
   btnFlip.disabled = false;
   btnCut.disabled = false;
+  btnGallery.disabled = false;
   hideBanner();
   ring.classList.add('hidden');
   fit();
@@ -256,7 +258,11 @@ async function shoot() {
   await snap(dark);
   hideBanner();
   await girlDown();
+  await finishPhoto();
+}
 
+/** after the picture is in camCv (from the camera or the gallery): cut out, open the editor */
+async function finishPhoto() {
   stopCamera();
   let photo = camCv;
   isCut = false;
@@ -1008,14 +1014,37 @@ btnFlip.addEventListener('click', async () => {
   facing = facing === 'user' ? 'environment' : 'user';
   try { await startCamera(); } catch (e) { facing = facing === 'user' ? 'environment' : 'user'; }
 });
-btnMute.addEventListener('click', () => {
-  muted = !muted;
-  sfx.setMuted(muted);
-  talk.setPlaybackMuted(muted);
-  btnMute.classList.toggle('off', muted);
-  pxIcon($('#mute-icon'), muted ? 'mute' : 'note');
-  btnMute.querySelector('small').textContent = muted ? 'OFF' : 'ON';
-  if (!muted) sfx.click();
+// gallery: use a picture from the phone instead of the camera
+btnGallery.addEventListener('click', () => {
+  if (state !== 'ready') return;
+  sfx.initAudio();
+  sfx.click();
+  galleryInput.value = '';
+  galleryInput.click();
+});
+galleryInput.addEventListener('change', async () => {
+  const file = galleryInput.files && galleryInput.files[0];
+  if (!file || state !== 'ready') return;
+  state = 'running';
+  btnShoot.disabled = true; btnFlip.disabled = true; btnCut.disabled = true; btnGallery.disabled = true;
+  try {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('not a picture')); img.src = url; });
+    // cover-crop into the 3:4 photo, like the camera (no mirroring; phone rotation is respected)
+    const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+    const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+    camG.clearRect(0, 0, W, H);
+    camG.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    showBanner({ text: 'OOPS!', tag: String(e.message || e) }, 2500);
+    state = 'ready';
+    btnShoot.disabled = false; btnFlip.disabled = false; btnCut.disabled = false; btnGallery.disabled = false;
+    return;
+  }
+  sfx.shutter();
+  await finishPhoto();
 });
 
 window.addEventListener('keydown', (e) => {

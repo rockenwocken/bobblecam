@@ -8,8 +8,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-512.png">
-  <link rel="stylesheet" href="fonts.css?v=202611072137">
-  <link rel="stylesheet" href="style.css?v=202611072137">
+  <link rel="stylesheet" href="fonts.css?v=202611072152">
+  <link rel="stylesheet" href="style.css?v=202611072152">
 </head>
 <body>
   <div class="sunburst" aria-hidden="true"></div>
@@ -58,7 +58,8 @@
       <button id="btn-cut" class="pill" type="button" aria-label="Remove background"><i class="px" data-icon="cut"></i><small>BG ON</small></button>
       <button id="btn-flip" class="pill" type="button" aria-label="Switch camera"><i class="px" data-icon="flip"></i><small>CAM</small></button>
       <button id="btn-shoot" class="shoot" type="button" aria-label="Shoot"><span>SHOT!</span></button>
-      <button id="btn-mute" class="pill" type="button" aria-label="Sound on/off"><i id="mute-icon" class="px" data-icon="note"></i><small>ON</small></button>
+      <button id="btn-gallery" class="pill" type="button" aria-label="Load a picture from the gallery"><i class="px" data-icon="gallery"></i><small>PIC</small></button>
+      <input id="gallery-input" type="file" accept="image/*" hidden>
     </footer>
 
     <footer id="editor" class="goo-only">
@@ -136,6 +137,6 @@
   </section>
 
   <video id="video" playsinline muted autoplay></video>
-  <script type="module" src="js/app.js?v=202611072137"></script>
+  <script type="module" src="js/app.js?v=202611072152"></script>
 </body>
 </html>

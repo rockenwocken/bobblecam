@@ -6,6 +6,10 @@ Eine Goo-Kamera fürs Handy im Arcade-Look von [STARSHOT](https://github.com/roc
 
 **Blitz:** Bei der Selfie-Kamera wird immer der ganze Bildschirm kurz weiß, das leuchtet das Gesicht an (am besten Bildschirmhelligkeit hoch). Bei der Rückkamera prüft die App die Helligkeit und schaltet bei Dunkelheit kurz die Taschenlampe als Blitz ein.
 
+## Bild aus der Galerie
+
+Der **PIC**-Knopf rechts neben SHOT! (statt des früheren Ton-Knopfs) öffnet die Galerie. Das gewählte Bild wird wie ein Kamerafoto aufs 3:4-Format zugeschnitten, freigestellt (wenn ✂ NO BG an ist) und kommt in den Goo-Editor, ohne Countdown.
+
 ## Hintergrund entfernen
 
 Der **✂**-Knopf neben dem Auslöser schaltet um zwischen **NO BG** (pink, Hintergrund wird nach dem Foto entfernt) und **BG ON** (Foto bleibt wie es ist). Die Einstellung wird gemerkt.

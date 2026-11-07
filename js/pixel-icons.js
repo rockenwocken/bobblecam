@@ -167,6 +167,17 @@ const ICONS = {
     'XXX.X.XX.',
     '...X...X.',
   ],
+  gallery: [
+    'XXXXXXXXX',
+    'X.......X',
+    'X.XX....X',
+    'X.XX....X',
+    'X.....X.X',
+    'X....XXXX',
+    'X.X.XXXXX',
+    'XXXXXXXXX',
+    'XXXXXXXXX',
+  ],
   film: [
     'XXXXXXXXX',
     'X.X.X.X.X',

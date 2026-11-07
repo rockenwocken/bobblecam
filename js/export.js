@@ -1,5 +1,5 @@
 // Turns the before/after bobble into a video for the gallery, or into a looping GIF.
-import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072137';
+import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072152';
 
 /** 0 → 1 → 0 over one period, soft at both ends */
 export const bobble = (phase) => 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
