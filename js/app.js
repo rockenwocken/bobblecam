@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072106';
-import { START_SOUNDS } from './start-sounds.js?v=202611072106';
-import { END_SOUNDS } from './end-sounds.js?v=202611072106';
-import { Goo } from './goo.js?v=202611072106';
-import { bobble, makeVideo } from './export.js?v=202611072106';
-import * as talk from './mouth.js?v=202611072106';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072106';
-import { makeFrame, FW, FH } from './frame.js?v=202611072106';
-import { paintBubbles } from './bubble-bg.js?v=202611072106';
-import * as words from './words.js?v=202611072106';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072106';
+import * as sfx from './sfx.js?v=202611072112';
+import { START_SOUNDS } from './start-sounds.js?v=202611072112';
+import { END_SOUNDS } from './end-sounds.js?v=202611072112';
+import { Goo } from './goo.js?v=202611072112';
+import { bobble, makeVideo } from './export.js?v=202611072112';
+import * as talk from './mouth.js?v=202611072112';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072112';
+import { makeFrame, FW, FH } from './frame.js?v=202611072112';
+import { paintBubbles } from './bubble-bg.js?v=202611072112';
+import * as words from './words.js?v=202611072112';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072112';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
@@ -444,7 +444,15 @@ function frameFor(kind) {
   }
   const amt = typeof goo.amount === 'function' ? goo.amount() : { strength: 20, cover: 0.1 };
   const sc = words.score(amt, extra, photoLuck);
+  lastInfo[kind] = { title: photoTitle, rank: words.rank(sc), score: sc };
   return makeFrame({ title: photoTitle, rank: words.rank(sc), score: sc, tag });
+}
+/** what was printed on the last frame of each kind, for the share text */
+const lastInfo = {};
+/** the text that goes along with a share, like STARSHOT: title ★ rank ★ score */
+function shareText(kind) {
+  const i = lastInfo[kind];
+  return i ? `${i.title} ★ RANK ${i.rank} ★ SCORE ${i.score.toLocaleString('en-US')} ★ BOBBLECAM` : 'BOBBLECAM';
 }
 const talkInfo = () => (pitch === 0 ? 'ORIGINAL VOICE' : `PITCH ${pitch > 0 ? '+' : ''}${pitch}`);
 
@@ -565,14 +573,14 @@ function download({ blob, name }) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
-async function shareFile({ blob, name }, title) {
+async function shareFile({ blob, name }, title, text) {
   const file = new File([blob], name, { type: blob.type });
   if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
     download({ blob, name });
     showBanner({ text: 'SAVED!', tag: 'シェアできない…' }, 2200);
     return;
   }
-  try { await navigator.share({ files: [file], title }); } catch (e) { /* cancelled */ }
+  try { await navigator.share({ files: [file], title, text }); } catch (e) { /* cancelled */ }
 }
 
 function clearReady() {
@@ -582,9 +590,9 @@ function clearReady() {
 
 const ACTIONS = {
   vsave: { btn: btnVSave, kind: 'video', run: (f) => download(f) },
-  vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM') },
+  vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM', shareText('loop')) },
   tsave: { btn: $('#btn-tsave'), kind: 'talk', run: (f) => download(f) },
-  tshare: { btn: $('#btn-tshare'), kind: 'talk', run: (f) => shareFile(f, 'BOBBLECAM') },
+  tshare: { btn: $('#btn-tshare'), kind: 'talk', run: (f) => shareFile(f, 'BOBBLECAM', shareText('talk')) },
 };
 
 async function act(name) {
