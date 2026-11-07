@@ -1,4 +1,4 @@
-import { normalize, envelope, pitchShift } from './dsp.js?v=202611072112';
+import { normalize, envelope, pitchShift } from './dsp.js?v=202611072115';
 
 // TALK mode: the microphone drives the goo. Loud = full "after", quiet = "before".
 // A take keeps the raw sound plus a loudness envelope, so it can be replayed
@@ -21,7 +21,7 @@ export async function openMic() {
   });
   ac = ac || new (window.AudioContext || window.webkitAudioContext)();
   if (ac.state === 'suspended') await ac.resume();
-  workletsReady = workletsReady || ac.audioWorklet.addModule('js/worklets.js?v=202611072112');
+  workletsReady = workletsReady || ac.audioWorklet.addModule('js/worklets.js?v=202611072115');
   await workletsReady;
   micSrc = ac.createMediaStreamSource(mic);
   analyser = ac.createAnalyser();

@@ -1,14 +1,14 @@
-import * as sfx from './sfx.js?v=202611072112';
-import { START_SOUNDS } from './start-sounds.js?v=202611072112';
-import { END_SOUNDS } from './end-sounds.js?v=202611072112';
-import { Goo } from './goo.js?v=202611072112';
-import { bobble, makeVideo } from './export.js?v=202611072112';
-import * as talk from './mouth.js?v=202611072112';
-import { initIcons, pxIcon } from './pixel-icons.js?v=202611072112';
-import { makeFrame, FW, FH } from './frame.js?v=202611072112';
-import { paintBubbles } from './bubble-bg.js?v=202611072112';
-import * as words from './words.js?v=202611072112';
-import { prepare as prepareCut, cutout } from './cutout.js?v=202611072112';
+import * as sfx from './sfx.js?v=202611072115';
+import { START_SOUNDS } from './start-sounds.js?v=202611072115';
+import { END_SOUNDS } from './end-sounds.js?v=202611072115';
+import { Goo } from './goo.js?v=202611072115';
+import { bobble, makeVideo } from './export.js?v=202611072115';
+import * as talk from './mouth.js?v=202611072115';
+import { initIcons, pxIcon } from './pixel-icons.js?v=202611072115';
+import { makeFrame, FW, FH } from './frame.js?v=202611072115';
+import { paintBubbles } from './bubble-bg.js?v=202611072115';
+import * as words from './words.js?v=202611072115';
+import { prepare as prepareCut, cutout } from './cutout.js?v=202611072115';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
