@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-512.png">
   <link rel="stylesheet" href="fonts.css">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
   <div class="sunburst" aria-hidden="true"></div>
@@ -47,7 +47,7 @@
           <span class="tile-label">LOOP</span>
         </button>
         <button id="pick-talk" class="tile" type="button">
-          <img src="assets/mouth.webp" alt="" width="240" height="300">
+          <img src="assets/talking.webp" alt="" width="480" height="270">
           <span class="tile-label">TALK</span>
         </button>
       </div>
@@ -93,6 +93,7 @@
       <div class="pick-title">CHOOSE YOUR BOBBLE!</div>
       <div class="row">
         <button id="btn-pback" class="pill alt" type="button"><i class="px" data-icon="back"></i><small>EDIT</small></button>
+        <button id="btn-jpg" class="pill hot" type="button"><i class="px" data-icon="save"></i><small>JPG</small></button>
       </div>
     </footer>
 
@@ -111,6 +112,7 @@
       </div>
     </footer>
 
+    <img id="holgi" class="holgi pick-only" src="assets/holgiflex.webp" alt="" aria-hidden="true">
     <img id="girl" class="girl" src="assets/photogirl.webp" alt="" aria-hidden="true">
     <div id="bigflash" aria-hidden="true"></div>
   </div>
@@ -124,10 +126,10 @@
     <button id="btn-start" class="start" type="button">PRESS START</button>
     <p class="blink">◆ INSERT COIN ◆ 1 CREDIT ◆</p>
     <p id="title-error" class="error hidden"></p>
-    <p class="fineprint">Allow camera &amp; turn sound ON. Photos never leave your phone.</p>
+    <p class="fineprint">Allow camera &amp; mic and turn sound ON. Nothing leaves your device. We don't get your data.</p>
   </section>
 
   <video id="video" playsinline muted autoplay></video>
-  <script type="module" src="js/app.js?v=13"></script>
+  <script type="module" src="js/app.js?v=14"></script>
 </body>
 </html>

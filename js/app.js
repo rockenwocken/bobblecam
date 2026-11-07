@@ -388,17 +388,18 @@ btnUndo.addEventListener('click', () => {
   if (goo.undo()) sfx.rewind();
   updateUndo();
 });
-btnAgain.addEventListener('click', async () => {
+btnAgain.addEventListener('click', () => newPhoto('NEW PHOTO? TAP AGAIN!'));
+async function newPhoto(ask) {
   sfx.click();
   if (goo.canUndo && Date.now() - confirmNew > 2500) {
     confirmNew = Date.now();
-    showBanner({ text: 'NEW PHOTO? TAP AGAIN!', tag: 'ほんとに？' }, 2500);
+    showBanner({ text: ask, tag: 'ほんとに？' }, 2500);
     return;
   }
   confirmNew = 0;
   try { await startCamera(); } catch (e) { showBanner({ text: 'CAMERA ERROR!', tag: String(e.name || e) }, 3000); return; }
   toCamera();
-});
+}
 
 // ---------- before/after screen ----------
 /** speed slider 0..100 → seconds per bobble, 4 s (slow) … 0.4 s (fast) */
@@ -421,6 +422,21 @@ function toPick() {
   hideBanner();
   state = 'pick';
   setMode('pick');
+  if (!sfx.playResult()) sfx.blip(); // "choose your fighter!"
+}
+
+/** SAVE JPG: just the finished goo picture */
+async function saveJpg() {
+  if (state !== 'pick') return;
+  sfx.click();
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  goo.render(1);
+  if (isCut) g.drawImage(bgCv, 0, 0); else { g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); }
+  g.drawImage(gooCv, 0, 0);
+  const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.92));
+  download({ blob, name: fileName('jpg') });
 }
 function drawPreview() {
   phase = (phase + 1 / 60 / 1.6) % 1;
@@ -559,6 +575,7 @@ async function act(name) {
 
 $('#btn-next').addEventListener('click', toPick);
 $('#btn-pback').addEventListener('click', backToGoo);
+$('#btn-jpg').addEventListener('click', saveJpg);
 $('#pick-loop').addEventListener('click', toAnim);
 $('#pick-talk').addEventListener('click', toTalk);
 $('#btn-back').addEventListener('click', toPick);
@@ -801,6 +818,34 @@ function fit() {
   screenEl.style.height = `${Math.floor(h)}px`;
 }
 
+// ---------- phone / browser back button ----------
+// One extra history entry is kept while the app runs. Pressing back uses it up,
+// we step one screen back inside the app and put it back. On the title screen
+// it isn't put back, so the next back leaves the page as usual.
+let armed = false;
+let started = false; // sounds loaded + permissions asked (only once)
+function armBack() {
+  if (armed) return;
+  history.pushState({ bobblecam: true }, '');
+  armed = true;
+}
+function toTitle() {
+  stopCamera();
+  hideBanner();
+  state = 'title';
+  $('#title').classList.remove('hidden');
+}
+window.addEventListener('popstate', () => {
+  armed = false;
+  if (state === 'title') return; // leave the app
+  if (state === 'ready') { toTitle(); return; }
+  armBack();
+  if (state === 'running' || busy || recording) return; // mid-action: ignore
+  if (state === 'anim' || state === 'talk') toPick();
+  else if (state === 'pick') backToGoo();
+  else if (state === 'goo') newPhoto('NEW PHOTO? PRESS BACK AGAIN!');
+});
+
 // ---------- wiring ----------
 $('#btn-start').addEventListener('click', async () => {
   sfx.initAudio();
@@ -814,11 +859,13 @@ $('#btn-start').addEventListener('click', async () => {
       return;
     }
   }
-  try {
-    // ask for camera and microphone in one go, so TALK mode never has to ask later
-    const both = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: true });
-    both.getTracks().forEach((t) => t.stop());
-  } catch (e) { /* mic (or both) refused: the camera is asked again below, TALK will say NO MIC */ }
+  if (!started) {
+    try {
+      // ask for camera and microphone in one go, so TALK mode never has to ask later
+      const both = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: true });
+      both.getTracks().forEach((t) => t.stop());
+    } catch (e) { /* mic (or both) refused: the camera is asked again below, TALK will say NO MIC */ }
+  }
   try {
     await startCamera();
   } catch (e) {
@@ -826,11 +873,16 @@ $('#btn-start').addEventListener('click', async () => {
     err.classList.remove('hidden');
     return;
   }
-  sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
-  sfx.loadEnds(END_SOUNDS.map((f) => `assets/end/${f}`));
-  if (cutBg) prepareCut().catch((e) => console.warn('cutout not ready', e));
+  if (!started) {
+    started = true;
+    sfx.loadVoices(START_SOUNDS.map((f) => `assets/start/${f}`));
+    sfx.loadEnds(END_SOUNDS.map((f) => `assets/end/${f}`));
+    if (cutBg) prepareCut().catch((e) => console.warn('cutout not ready', e));
+    sfx.loadResult('assets/choose-your-fighter.mp3');
+  }
   $('#title').classList.add('hidden');
   toCamera();
+  armBack();
 });
 
 btnShoot.addEventListener('click', shoot);

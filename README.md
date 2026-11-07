@@ -28,7 +28,7 @@ Freigestellt wird mit MediaPipe Selfie Segmentation, komplett lokal auf dem Hand
 
 ## Auswahl: LOOP oder TALK
 
-Nach **➜ NEXT** stehen zwei umrandete Kacheln zur Wahl, ◀ EDIT geht zurück in den Editor.
+Nach **➜ NEXT** ertönt „Choose your fighter!“ und oben stehen zwei umrandete Kacheln zur Wahl, darunter flext Holgi. **◀ EDIT** geht zurück in den Editor, **⬇ JPG** speichert nur das fertige Nachher-Bild als JPG.
 
 **LOOP** (Kachel zeigt dein Bild live wackelnd): Das Bild wackelt in einer Schleife zwischen Original und Goo-Version, der Schieberegler stellt die Geschwindigkeit ein (4 s bis 0,4 s pro Wackler).
 - **SAVE** speichert die Animation als Video (MP4, sonst WebM), mind. 3 Sekunden
@@ -58,6 +58,10 @@ Danach läuft die App unter `https://rockenwocken.github.io/bobblecam/`.
 Auf dem Handy in Chrome öffnen → Menü → *Zum Startbildschirm hinzufügen* für Vollbild.
 
 Lokal testen: `python3 -m http.server` im Ordner starten und `http://localhost:8000` öffnen.
+
+## Zurück-Taste
+
+Die Zurück-Taste vom Handy oder Browser geht in der App einen Bildschirm zurück: LOOP/TALK → Auswahl → Editor → (zweimal drücken) Kamera → Startbildschirm. Erst vom Startbildschirm aus verlässt sie die App.
 
 ## Look
 

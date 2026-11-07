@@ -652,3 +652,19 @@ button:disabled { opacity: .45; cursor: default; }
 .start:active { transform: translateY(8px); box-shadow: var(--px-outline), 0 var(--px) 0 0 var(--ink), var(--px-bevel-in); animation: none; }
 @keyframes pxBob { 50% { transform: translateY(-8px); } }
 .error { border-radius: 0; box-shadow: var(--px-outline); }
+
+/* pick screen: tiles at the top, Holgi flexing underneath, title + buttons on top of him */
+#app.mode-pick #stage { position: relative; z-index: 2; align-items: flex-start; }
+#app.mode-pick .pick { align-items: flex-start; padding-top: 26px; }
+#pickbar { position: relative; z-index: 2; }
+.holgi {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  height: min(56vh, 140vw);
+  width: auto;
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  image-rendering: auto;
+}
