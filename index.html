@@ -48,7 +48,7 @@
         <button class="pill tool on" data-tool="smear" type="button">〰<small>SMEAR</small></button>
         <button class="pill tool" data-tool="grow" type="button">⊕<small>GROW</small></button>
         <button class="pill tool" data-tool="shrink" type="button">⊖<small>SHRINK</small></button>
-        <button class="pill tool" data-tool="swirl" type="button">@<small>SWIRL</small></button>
+        <button class="pill tool" data-tool="swirl" type="button"><b id="swirl-icon">↻</b><small>SWIRL</small></button>
         <button class="pill tool" data-tool="ungoo" type="button">✧<small>UNGOO</small></button>
       </div>
       <div class="row">
@@ -57,6 +57,20 @@
         <button id="btn-save" class="pill hot" type="button">⬇<small>SAVE</small></button>
         <button id="btn-share" class="pill hot" type="button">✦<small>SHARE</small></button>
         <button id="btn-again" class="pill alt" type="button">◉<small>NEW</small></button>
+      </div>
+    </footer>
+
+    <footer id="anim" class="anim-only">
+      <label class="speed">
+        <span class="speed-label">SLOW</span>
+        <input id="speed" type="range" min="0" max="100" value="55" aria-label="Animation speed">
+        <span class="speed-label">FAST</span>
+      </label>
+      <div class="row">
+        <button id="btn-back" class="pill alt" type="button">◀<small>EDIT</small></button>
+        <button id="btn-vsave" class="pill hot" type="button">⬇<small>SAVE</small></button>
+        <button id="btn-vshare" class="pill hot" type="button">✦<small>SHARE</small></button>
+        <button id="btn-sticker" class="pill sticker" type="button">☺<small>STICKER</small></button>
       </div>
     </footer>
   </div>

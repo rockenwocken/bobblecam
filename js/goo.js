@@ -17,10 +17,11 @@ uniform sampler2D disp;
 uniform vec2 size;   // image size in px
 uniform vec2 grid;   // field size in points
 uniform float G;     // px per grid step
+uniform float amt;   // 0 = original photo, 1 = full goo (for the before/after animation)
 out vec4 o;
 void main() {
   vec2 p = vec2(gl_FragCoord.x, size.y - gl_FragCoord.y);
-  vec2 d = texture(disp, (p / G + 0.5) / grid).rg;
+  vec2 d = texture(disp, (p / G + 0.5) / grid).rg * amt;
   o = texture(img, (p + d) / size);
 }`;
 
@@ -83,6 +84,9 @@ export class Goo {
     gl.uniform2f(gl.getUniformLocation(prog, 'size'), W, H);
     gl.uniform2f(gl.getUniformLocation(prog, 'grid'), this.gw, this.gh);
     gl.uniform1f(gl.getUniformLocation(prog, 'G'), G);
+    this.amtLoc = gl.getUniformLocation(prog, 'amt');
+    gl.uniform1f(this.amtLoc, 1);
+    this.amt = 1;
     gl.viewport(0, 0, W, H);
   }
 
@@ -205,19 +209,16 @@ export class Goo {
   }
 
   // ---------- output ----------
-  render() {
-    if (!this.dirty) return;
+  /** amt: how much of the goo to show (1 = all of it) */
+  render(amt = 1) {
     const gl = this.gl;
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, this.dispTex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.gw, this.gh, gl.RG, gl.FLOAT, this.field);
+    if (this.dirty) {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, this.dispTex);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.gw, this.gh, gl.RG, gl.FLOAT, this.field);
+    } else if (amt === this.amt) return;
+    if (amt !== this.amt) { gl.uniform1f(this.amtLoc, amt); this.amt = amt; }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     this.dirty = false;
-  }
-
-  toBlob() {
-    this.dirty = true;
-    this.render();
-    return new Promise((res) => this.canvas.toBlob(res, 'image/png'));
   }
 }

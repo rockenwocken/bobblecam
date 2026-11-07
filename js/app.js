@@ -1,11 +1,12 @@
 import * as sfx from './sfx.js';
 import { START_SOUNDS } from './start-sounds.js';
 import { Goo } from './goo.js';
+import { bobble, makeVideo, makeSticker } from './export.js';
 
 // ---------- config ----------
 const W = 1080, H = 1440;
 const COUNT_STEP = 1000; // ms per countdown number
-const SIZES = [{ r: 80, n: 'S' }, { r: 150, n: 'M' }, { r: 250, n: 'L' }, { r: 380, n: 'XL' }];
+const R_MIN = 30, R_MAX = 520;
 const RATE = { grow: 1.1, shrink: 1.1, swirl: 2.6, ungoo: 3.5 }; // per second while held
 const POSES = [
   { text: 'MAKE A FUNNY FACE!', tag: 'へんがお！' },
@@ -38,6 +39,10 @@ const btnMute = $('#btn-mute');
 const btnUndo = $('#btn-undo');
 const btnSize = $('#btn-size');
 const btnAgain = $('#btn-again');
+const speedEl = $('#speed');
+const btnVSave = $('#btn-vsave');
+const btnVShare = $('#btn-vshare');
+const btnSticker = $('#btn-sticker');
 
 // ---------- state ----------
 let facing = 'user';
@@ -46,13 +51,19 @@ let state = 'title'; // title | ready | running | goo
 let muted = false;
 let goo = null;
 let tool = 'smear';
-let sizeIdx = 1;
+let brushR = 150;
+let swirlDir = 1; // 1 = clockwise, -1 = counter-clockwise
+let sizeMode = false;
+let phase = 0; // before/after animation
+let busy = false;
+let ready = null; // { kind, blob, name } waiting for a second tap
+let exportsCache = {}; // kind → { key, blob, name }
 let pointer = null; // { id, x, y, stop?, travel }
 let lastT = 0;
 let confirmNew = 0;
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const radius = () => SIZES[sizeIdx].r;
+const radius = () => brushR;
 
 // ---------- overlays ----------
 let bannerTimer = 0;
@@ -162,26 +173,38 @@ async function shoot() {
 
 // ---------- editor ----------
 function setTool(t) {
+  if (t === 'swirl' && tool === 'swirl') swirlDir = -swirlDir; // tap again: other direction
   tool = t;
+  setSizeMode(false);
   document.querySelectorAll('.tool').forEach((b) => b.classList.toggle('on', b.dataset.tool === t));
+  const sb = $('[data-tool=swirl]');
+  sb.classList.toggle('ccw', swirlDir < 0);
+  $('#swirl-icon').textContent = swirlDir > 0 ? '↻' : '↺';
+}
+function setSizeMode(on) {
+  sizeMode = on;
+  btnSize.classList.toggle('armed', on);
+  btnSize.classList.toggle('alt', !on);
+  updateSize();
 }
 function updateUndo() { btnUndo.disabled = !goo.canUndo; }
 function updateSize() {
-  btnSize.querySelector('small').textContent = `SIZE ${SIZES[sizeIdx].n}`;
-  $('#size-dot').style.fontSize = `${10 + sizeIdx * 7}px`;
+  btnSize.querySelector('small').textContent = sizeMode ? 'DRAG!' : `SIZE ${Math.round(brushR)}`;
+  $('#size-dot').style.fontSize = `${8 + ((brushR - R_MIN) / (R_MAX - R_MIN)) * 26}px`;
 }
 
 function toImage(e) {
   const r = gooCv.getBoundingClientRect();
   return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
 }
-function showRing(x, y, active) {
+function showRing(x, y, active, sizing = false) {
   const d = (radius() * 2 / W) * 100;
   ring.style.left = `${(x / W) * 100}%`;
   ring.style.top = `${(y / H) * 100}%`;
   ring.style.width = `${d}%`;
   ring.style.height = `${(radius() * 2 / H) * 100}%`;
   ring.classList.toggle('active', active);
+  ring.classList.toggle('sizing', sizing);
   ring.classList.remove('hidden');
 }
 
@@ -190,6 +213,12 @@ gooCv.addEventListener('pointerdown', (e) => {
   sfx.initAudio();
   gooCv.setPointerCapture(e.pointerId);
   const [x, y] = toImage(e);
+  if (sizeMode) {
+    // size mode: the ring sits where the finger went down, its edge follows the finger
+    pointer = { id: e.pointerId, x, y, sx: x, sy: y, sizing: true };
+    showRing(x, y, true, true);
+    return;
+  }
   goo.checkpoint();
   updateUndo();
   pointer = { id: e.pointerId, x, y, travel: 0, stop: tool === 'smear' ? null : sfx.gooHold(tool) };
@@ -204,6 +233,14 @@ gooCv.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'mouse') showRing(x, y, false);
     return;
   }
+  if (pointer.sizing) {
+    const r = Math.max(R_MIN, Math.min(R_MAX, Math.hypot(x - pointer.sx, y - pointer.sy)));
+    if (Math.floor(r / 40) !== Math.floor(brushR / 40)) sfx.click();
+    brushR = r;
+    updateSize();
+    showRing(pointer.sx, pointer.sy, true, true);
+    return;
+  }
   if (tool === 'smear') {
     const dx = x - pointer.x, dy = y - pointer.y;
     goo.smear(pointer.x, pointer.y, dx, dy, radius());
@@ -216,7 +253,14 @@ gooCv.addEventListener('pointermove', (e) => {
 function endPointer(e) {
   if (!pointer || pointer.id !== e.pointerId) return;
   if (pointer.stop) pointer.stop();
+  const wasSizing = pointer.sizing;
   pointer = null;
+  if (wasSizing) {
+    setSizeMode(false);
+    sfx.blip();
+    setTimeout(() => { if (!pointer) ring.classList.add('hidden'); }, 600);
+    return;
+  }
   if (e.pointerType === 'mouse') ring.classList.remove('active');
   else ring.classList.add('hidden');
 }
@@ -230,11 +274,10 @@ document.querySelectorAll('.tool').forEach((b) => b.addEventListener('click', ()
   setTool(b.dataset.tool);
 }));
 btnSize.addEventListener('click', () => {
-  sfx.click();
-  sizeIdx = (sizeIdx + 1) % SIZES.length;
-  updateSize();
-  showRing(W / 2, H / 2, false);
-  setTimeout(() => { if (!pointer) ring.classList.add('hidden'); }, 700);
+  sfx.initAudio();
+  sfx.blip();
+  setSizeMode(!sizeMode);
+  if (sizeMode) showBanner({ text: 'DRAG TO SIZE!', tag: 'おおきく？ちいさく？' }, 1800);
 });
 btnUndo.addEventListener('click', () => {
   if (goo.undo()) sfx.rewind();
@@ -252,49 +295,148 @@ btnAgain.addEventListener('click', async () => {
   toCamera();
 });
 
-// ---------- save / share ----------
-function fileName() {
+// ---------- before/after screen ----------
+/** speed slider 0..100 → seconds per bobble, 4 s (slow) … 0.4 s (fast) */
+const period = () => 4 * Math.pow(0.1, Number(speedEl.value) / 100);
+
+function toAnim() {
+  if (state !== 'goo') return;
+  sfx.click();
+  if (!goo.canUndo) { showBanner({ text: 'GOO IT FIRST!', tag: 'まだまだ！' }, 1800); return; }
+  state = 'anim';
+  app.className = 'mode-anim';
+  ring.classList.add('hidden');
+  setSizeMode(false);
+  phase = 0;
+  exportsCache = {};
+  clearReady();
+  fit();
+  showBanner({ text: 'BEFORE ⇄ AFTER!', tag: 'ビフォー・アフター！' }, 1800);
+}
+function backToGoo() {
+  if (busy) return;
+  sfx.click();
+  state = 'goo';
+  app.className = 'mode-goo';
+  clearReady();
+  goo.render(1);
+  fit();
+}
+
+function fileName(ext) {
   const d = new Date();
   const p = (n) => String(n).padStart(2, '0');
-  return `bobblecam-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
+  return `bobblecam-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
 }
-async function save() {
-  sfx.click();
-  const blob = await goo.toBlob();
+
+/** makes (or reuses) the video or sticker for the current speed */
+async function build(kind) {
+  const key = speedEl.value;
+  const c = exportsCache[kind];
+  if (c && c.key === key) return c;
+  busy = true;
+  try {
+    let out;
+    if (kind === 'video') {
+      const { blob, ext } = await makeVideo(gooCv, (ph) => goo.render(bobble(ph % 1)), period());
+      out = { key, blob, name: fileName(ext) };
+    } else {
+      const blob = await makeSticker(gooCv, (a) => goo.render(a), period());
+      out = { key, blob, name: fileName('webp') };
+    }
+    exportsCache[kind] = out;
+    return out;
+  } finally {
+    busy = false;
+  }
+}
+
+function download({ blob, name }) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = fileName();
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
-async function share() {
-  sfx.click();
-  const blob = await goo.toBlob();
-  const file = new File([blob], fileName(), { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'BOBBLECAM' }); } catch (e) { /* cancelled */ }
-  } else {
-    save();
+async function shareFile({ blob, name }, title) {
+  const file = new File([blob], name, { type: blob.type });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) {
+    download({ blob, name });
+    showBanner({ text: 'SAVED!', tag: 'シェアできない…' }, 2200);
+    return;
   }
+  try { await navigator.share({ files: [file], title }); } catch (e) { /* cancelled */ }
 }
-$('#btn-save').addEventListener('click', save);
-$('#btn-share').addEventListener('click', share);
+
+function clearReady() {
+  ready = null;
+  [btnVSave, btnVShare, btnSticker].forEach((b) => b.classList.remove('ready', 'busy'));
+}
+
+const ACTIONS = {
+  vsave: { btn: btnVSave, kind: 'video', run: (f) => download(f) },
+  vshare: { btn: btnVShare, kind: 'video', run: (f) => shareFile(f, 'BOBBLECAM') },
+  sticker: { btn: btnSticker, kind: 'sticker', run: (f) => shareFile(f, 'BOBBLECAM sticker') },
+};
+
+async function act(name) {
+  if (state !== 'anim' || busy) return;
+  sfx.initAudio();
+  const a = ACTIONS[name];
+  // second tap on a ready button: the share sheet needs a fresh tap after a long wait
+  if (ready && ready.name === name) { sfx.chu(); clearReady(); return a.run(exportsCache[a.kind]); }
+  clearReady();
+  sfx.click();
+  const t0 = Date.now();
+  a.btn.classList.add('busy');
+  showBanner(a.kind === 'video'
+    ? { text: 'RECORDING…', tag: 'ろくがちゅう！' }
+    : { text: 'MAKING STICKER…', tag: 'ステッカー！' });
+  let f;
+  try {
+    f = await build(a.kind);
+  } catch (e) {
+    a.btn.classList.remove('busy');
+    showBanner({ text: 'OOPS!', tag: String(e.message || e) }, 3000);
+    return;
+  }
+  a.btn.classList.remove('busy');
+  if (Date.now() - t0 < 3500 || name === 'vsave') {
+    hideBanner();
+    return a.run(f);
+  }
+  ready = { name };
+  a.btn.classList.add('ready');
+  sfx.blip();
+  showBanner({ text: 'READY! TAP AGAIN!', tag: 'できた！' });
+}
+
+$('#btn-save').addEventListener('click', toAnim);
+$('#btn-share').addEventListener('click', toAnim);
+$('#btn-back').addEventListener('click', backToGoo);
+btnVSave.addEventListener('click', () => act('vsave'));
+btnVShare.addEventListener('click', () => act('vshare'));
+btnSticker.addEventListener('click', () => act('sticker'));
+speedEl.addEventListener('input', () => { if (ready) clearReady(); });
 
 // ---------- frame loop ----------
 function loop(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0);
   lastT = t;
   if (state === 'ready' || state === 'running') drawFrame();
-  if (state === 'goo' && pointer && tool !== 'smear') {
+  if (state === 'goo' && pointer && !pointer.sizing && tool !== 'smear') {
     const r = radius(), { x, y } = pointer;
     if (tool === 'grow') goo.scale(x, y, r, RATE.grow * dt * 0.25);
     else if (tool === 'shrink') goo.scale(x, y, r, -RATE.shrink * dt * 0.25);
-    else if (tool === 'swirl') goo.swirl(x, y, r, RATE.swirl * dt);
+    else if (tool === 'swirl') goo.swirl(x, y, r, swirlDir * RATE.swirl * dt);
     else if (tool === 'ungoo') goo.ungoo(x, y, r, Math.min(1, RATE.ungoo * dt));
   }
-  if (goo) goo.render();
+  if (state === 'anim') {
+    if (!busy) phase = (phase + dt / period()) % 1;
+    if (!busy) goo.render(bobble(phase));
+  } else if (goo) goo.render();
   requestAnimationFrame(loop);
 }
 
