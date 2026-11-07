@@ -1,5 +1,5 @@
 // Turns the before/after bobble into a video for the gallery, or into a looping GIF.
-import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072135';
+import { GIFEncoder, quantize, applyPalette } from './vendor/gifenc.js?v=202611072137';
 
 /** 0 → 1 → 0 over one period, soft at both ends */
 export const bobble = (phase) => 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
@@ -59,10 +59,10 @@ export function resumeMusic() { if (ac && ac.state === 'suspended') ac.resume();
 
 /**
  * Records the animation in real time. draw(phase) must render one frame onto `canvas`.
- * music: optional URL of a song that plays from the start and fades out at the end
+ * music: optional URL of a song that plays from `musicFrom` seconds and fades out at the end
  * (also out loud, unless muted). Resolves to { blob, ext }.
  */
-export async function makeVideo(canvas, draw, period, minSeconds = 3, music = null, muted = false) {
+export async function makeVideo(canvas, draw, period, minSeconds = 3, music = null, muted = false, musicFrom = 0) {
   let buf = null;
   if (music) { try { buf = await song(music); } catch (e) { console.warn('music not loaded', e); } }
   const type = videoType(!!buf);
@@ -94,7 +94,7 @@ export async function makeVideo(canvas, draw, period, minSeconds = 3, music = nu
     gain.gain.setValueAtTime(1, a0);
     gain.gain.setValueAtTime(1, Math.max(a0, end - 0.6));
     gain.gain.linearRampToValueAtTime(0, end); // fade out with the last bobble
-    src.start(a0);
+    src.start(a0, musicFrom);
   }
   const t0 = performance.now();
   await new Promise((res) => {
