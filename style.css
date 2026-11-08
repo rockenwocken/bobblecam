@@ -405,7 +405,7 @@ button:disabled { opacity: .45; cursor: default; }
   left: 50%;
   bottom: 0;
   /* phone: 1.5× screen width; wide screens: capped by height so she covers about half the screen */
-  width: min(150vw, 68vh);
+  width: min(89vw, 40.5vh); /* image is cropped tight to her now: same size as before, centred */
   max-width: none;
   height: auto;
   z-index: 40;
